@@ -14,6 +14,12 @@ Fork of [Hexagon's Mastering Mixology plugin](https://github.com/hex-agon/master
   red (skip) according to a state-machine policy proven near-optimal by
   Monte-Carlo simulation (see below)
 * Optional misclick protection: lock idle stations and cap Concentrate spam-clicks
+* Mixing guidance: optionally highlight only the next lever to pull, lock the
+  other levers, and block mixing a vessel whose pastes match no open order
+* Mixing vessel and conveyor belt turn green when they are the next thing to click
+* Optional "wait for full order": no station highlight until every order you're
+  making is mixed
+* Skipped orders draw their recipe letters / blocks in the skip colour
 
 ### The adaptive meta-strategy in one paragraph
 
