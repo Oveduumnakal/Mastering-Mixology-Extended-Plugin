@@ -250,9 +250,11 @@ public class MetaPolicy
 	/**
 	 * Deficit-reduction score for a slot: sum over colours of
 	 * resin_in_color * max(deficit_color, 0). Resin yield per potion:
-	 *   XXX (single component repeated 3x)     -> 20 of X
-	 *   XXY (one component doubled, one single)-> 20 of doubled + 10 of single
-	 *   XYZ (three distinct components = MAL)  -> 20 of each
+	 * <ul>
+	 * <li>XXX (single component repeated 3x): 20 of X</li>
+	 * <li>XXY (one component doubled, one single): 20 of doubled + 10 of single</li>
+	 * <li>XYZ (three distinct components = MAL): 20 of each</li>
+	 * </ul>
 	 */
 	private static int slotScore(PotionType pt, int[] deficit)
 	{
