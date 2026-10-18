@@ -43,6 +43,8 @@ tasks.register('checkStyleRules', Exec) {
 	commandLine pythonExecutable, 'scripts/check-style.py'
 }
 
+check.dependsOn checkStyleRules
+
 javadoc {
 	options.memberLevel = JavadocMemberLevel.PRIVATE
 	options.addStringOption('Xdoclint:syntax,html,reference', '-quiet')
