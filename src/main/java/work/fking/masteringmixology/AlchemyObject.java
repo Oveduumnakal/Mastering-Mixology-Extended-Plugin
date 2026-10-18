@@ -3,6 +3,7 @@ package work.fking.masteringmixology;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ObjectID;
 
+/** The lab objects the plugin highlights or guards, with their object id and their location in the lab. */
 public enum AlchemyObject
 {
 	MOX_LEVER(ObjectID.MM_LAB_SWITCH_MOX, new WorldPoint(1395, 9324, 0)),

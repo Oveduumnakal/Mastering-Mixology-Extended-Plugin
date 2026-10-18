@@ -1,14 +1,15 @@
 package work.fking.masteringmixology;
 
+/**
+ * Tracks the Retort's progress bar so concentrate clicks can be capped one click short of completion.
+ *
+ * <p>The cap blocks when {@code currentProgress + clickDelta >= max}. The click delta is the largest progress jump
+ * seen on a click tick: passive ticks add 1 and a click adds 2 at the measured level. It starts at 2 and only rises,
+ * so a higher Herblore level that makes a click worth 3 is picked up automatically. It persists across potions
+ * because it is a property of the player's level, while the current progress resets for each potion.
+ */
 class RetortProgressTracker
 {
-	// The cap stops one click short of completion: block when
-	// currentProgress + clickDelta >= max. clickDelta is the largest progress
-	// jump seen on a click tick (passive ticks add +1, a click adds +2 at the
-	// measured level). It defaults to 2 and only rises, so a higher Herblore
-	// level that makes a click worth +3 is picked up automatically. It persists
-	// across potions (it is a property of the player's level), while
-	// currentProgress resets per potion.
 	private boolean potionLoaded;
 	private int currentProgress;
 	private int clickDelta = 2;

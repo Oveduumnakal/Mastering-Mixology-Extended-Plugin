@@ -9,6 +9,7 @@ import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.outline.ModelOutlineRenderer;
 
+/** Outlines the lab objects the plugin wants the player to click next. */
 public class MasteringMixologyOverlay extends Overlay
 {
 	private final MasteringMixologyPlugin plugin;

@@ -11,6 +11,7 @@ import static work.fking.masteringmixology.PotionComponent.AGA;
 import static work.fking.masteringmixology.PotionComponent.LYE;
 import static work.fking.masteringmixology.PotionComponent.MOX;
 
+/** Every potion type, with its unfinished and finished item ids and its recipe of three resin components. */
 public enum PotionType
 {
 	MAMMOTH_MIGHT_MIX(ItemID.MM_POTION_MMM_UNFINISHED, ItemID.MM_POTION_MMM_FINISHED, 1900, MOX, MOX, MOX),
@@ -46,7 +47,6 @@ public enum PotionType
 	private final String abbreviation;
 	private final int experience;
 	private final PotionComponent[] components;
-
 
 	PotionType(int itemId, int modifiedItemId, int experience, PotionComponent... components)
 	{

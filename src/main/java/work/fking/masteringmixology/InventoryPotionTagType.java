@@ -1,5 +1,6 @@
 package work.fking.masteringmixology;
 
+/** How potions in the inventory are tagged with their recipe: not at all, in the resin colours, or in white. */
 public enum InventoryPotionTagType
 {
 	NONE,

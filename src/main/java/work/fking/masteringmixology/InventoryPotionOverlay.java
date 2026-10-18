@@ -9,6 +9,7 @@ import net.runelite.api.widgets.WidgetItem;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.WidgetItemOverlay;
 
+/** Tags each potion in the inventory with its recipe, as letters or as colour blocks in accessibility mode. */
 public class InventoryPotionOverlay extends WidgetItemOverlay
 {
 	private final MasteringMixologyPlugin plugin;
@@ -22,6 +23,7 @@ public class InventoryPotionOverlay extends WidgetItemOverlay
 		showOnInventory();
 	}
 
+	/** Draws the recipe on a potion's inventory icon, over a black drop shadow when it is drawn as letters. */
 	@Override
 	public void renderItemOverlay(Graphics2D graphics2D, int itemId, WidgetItem widgetItem)
 	{
@@ -43,7 +45,7 @@ public class InventoryPotionOverlay extends WidgetItemOverlay
 			return;
 		}
 
-		drawRecipe(graphics2D, potion, x + 1, y + 1, Color.BLACK); // Drop shadow
+		drawRecipe(graphics2D, potion, x + 1, y + 1, Color.BLACK);
 
 		if (config.inventoryPotionTagType() == InventoryPotionTagType.COLORED)
 		{

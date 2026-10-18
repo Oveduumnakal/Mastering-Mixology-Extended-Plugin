@@ -6,6 +6,10 @@ import static work.fking.masteringmixology.PotionComponent.AGA;
 import static work.fking.masteringmixology.PotionComponent.LYE;
 import static work.fking.masteringmixology.PotionComponent.MOX;
 
+/**
+ * The rewards that can be tracked, with their item id and their resin cost in each colour. Repeatable rewards can be
+ * wanted in quantity.
+ */
 public enum RewardItem
 {
 	NONE("None", 0, false, 0, 0, 0),

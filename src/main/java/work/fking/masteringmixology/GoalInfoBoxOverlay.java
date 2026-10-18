@@ -22,6 +22,10 @@ import net.runelite.client.ui.overlay.components.SplitComponent;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.QuantityFormatter;
 
+/**
+ * Info box for the reward goal: the reward icon with its name and affordable amount, the overall progress and,
+ * optionally, a progress bar for each resin colour.
+ */
 class GoalInfoBoxOverlay extends OverlayPanel
 {
 	private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
@@ -39,8 +43,9 @@ class GoalInfoBoxOverlay extends OverlayPanel
 
 	private final PanelComponent topPanel = new PanelComponent();
 
-	// Caching
+	/** Reward icon kept between renders, so it is only looked up again when the reward changes. */
 	private BufferedImage cachedRewardIcon;
+	/** The reward {@link #cachedRewardIcon} belongs to. */
 	private RewardItem cachedRewardItem;
 
 	private final BufferedImage[] componentSprites = new BufferedImage[PotionComponent.ENTRIES.length];
@@ -69,6 +74,10 @@ class GoalInfoBoxOverlay extends OverlayPanel
 		topPanel.setBackgroundColor(null);
 	}
 
+	/**
+	 * Draws the goal panel: the reward icon, its name with the affordable/goal amount and the overall progress, then a
+	 * progress bar per resin colour when those are enabled.
+	 */
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
@@ -81,7 +90,6 @@ class GoalInfoBoxOverlay extends OverlayPanel
 		topPanel.getChildren().clear();
 		graphics.setFont(FontManager.getRunescapeSmallFont());
 
-		// Build the top display with the affordable amount / goal amount
 		String goalAmountText = "";
 		if (!goal.isMultiMode() && rewardItem.isRepeatable() && goal.getRewardQuantity() > 1)
 		{
@@ -121,7 +129,6 @@ class GoalInfoBoxOverlay extends OverlayPanel
 		topPanel.getChildren().add(topInfoSplit);
 		panelComponent.getChildren().add(topPanel);
 
-		// Add a progress bar for each component
 		if (config.showResinBars())
 		{
 			for (var component : PotionComponent.ENTRIES)
@@ -182,12 +189,16 @@ class GoalInfoBoxOverlay extends OverlayPanel
 		return sprite;
 	}
 
+	/**
+	 * Fetches a resin sprite, resized and centred on a square canvas.
+	 *
+	 * @return the sprite, or null if it is not loaded yet
+	 */
 	private BufferedImage createComponentSprite(PotionComponent component)
 	{
 		var sprite = spriteManager.getSprite(component.spriteId(), 0);
 		if (sprite != null)
 		{
-			// Resize and center the sprite
 			var resizedImage = ImageUtil.resizeImage(sprite, COMPONENT_SPRITE_SIZE, COMPONENT_SPRITE_SIZE, true);
 			return ImageUtil.resizeCanvas(resizedImage, COMPONENT_SPRITE_SIZE, COMPONENT_SPRITE_SIZE);
 		}

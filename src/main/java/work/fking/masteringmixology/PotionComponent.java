@@ -4,6 +4,10 @@ import java.awt.Color;
 
 import net.runelite.api.gameval.SpriteID;
 
+/**
+ * The three resin components, mox, aga and lye, with the letter, colour and sprite that stand for each and the
+ * varp that holds the player's stock of it.
+ */
 public enum PotionComponent
 {
 	MOX('M', "03a9f4", SpriteID.IconAlchemyChemicals01_20x20._0, MasteringMixologyPlugin.VARP_MOX_RESIN),

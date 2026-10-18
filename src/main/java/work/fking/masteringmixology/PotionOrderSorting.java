@@ -2,6 +2,7 @@ package work.fking.masteringmixology;
 
 import java.util.Comparator;
 
+/** How the order list in the interface is sorted. Vanilla leaves the game's own order untouched. */
 public enum PotionOrderSorting
 {
 	VANILLA("Vanilla (random)", null),
