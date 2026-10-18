@@ -7,3 +7,9 @@ build
 nbactions.xml
 nb-configuration.xml
 nbproject/
+/.claude
+
+HANDOFF.md
+
+scripts/__pycache__/
+*.pyc
