@@ -5,10 +5,16 @@ import java.util.Set;
 
 import net.runelite.client.util.Text;
 
+/**
+ * Decides which clicks on the Alembic, Agitator and Retort are consumed: stations that have nothing to do, and
+ * Concentrate clicks that would load the next potion.
+ */
 final class StationGuard
 {
-	// Maximum value of VarbitID.MM_RETORT_PROGRESS (fixed game constant; the bar
-	// runs 0..16, then resets to 0 on completion).
+	/**
+	 * Maximum value of {@code VarbitID.MM_RETORT_PROGRESS}, a fixed game constant: the bar runs from 0 to 16, then
+	 * resets to 0 on completion.
+	 */
 	static final int RETORT_PROGRESS_MAX = 16;
 
 	private StationGuard()
@@ -50,10 +56,12 @@ final class StationGuard
 		return false;
 	}
 
+	/**
+	 * Whether one more click would reach or exceed the maximum. The bar then coasts the last step or steps to
+	 * completion on passive fill, so the click can be blocked.
+	 */
 	static boolean concentrateCapReached(int currentProgress, int clickDelta, int maxProgress)
 	{
-		// Block once one more click would reach/exceed the max; the bar then
-		// coasts the last step(s) to completion on passive fill.
 		return currentProgress + clickDelta >= maxProgress;
 	}
 }

@@ -20,7 +20,18 @@ import java.util.Set;
  */
 public class MetaPolicy
 {
-	public enum State { SINGLE_BN, DUAL_BN, BALANCED }
+	/** The deficit shape the policy is currently responding to. */
+	public enum State
+	{
+		/** One colour is clearly furthest behind. */
+		SINGLE_BN,
+
+		/** The two furthest-behind colours are close to each other. */
+		DUAL_BN,
+
+		/** All three colours are about equally far behind. */
+		BALANCED
+	}
 
 	/** Recommended thresholds from the sweep at 61k/53k/71k. See STRATEGY.md §7. */
 	public static final double T_DUAL_IN       = 0.20;
@@ -43,6 +54,11 @@ public class MetaPolicy
 	/**
 	 * Decide which slots to brew.
 	 *
+	 * <p>The colours are ranked by remaining deficit, largest first. A tie goes to the lower colour index, which
+	 * matches the stable sort of R's {@code order(..., decreasing=TRUE)} used by the simulator. The state then moves
+	 * with hysteresis; when it leaves {@link State#BALANCED} the next state is {@link State#DUAL_BN} if the top two
+	 * deficits are still close and {@link State#SINGLE_BN} otherwise.
+	 *
 	 * @param orders     the 3 current orders' PotionTypes (slot index = array index)
 	 * @param resin      [mox, aga, lye] current resin from varps
 	 * @param target     [mox, aga, lye] total target (sum of selected reward costs)
@@ -54,9 +70,6 @@ public class MetaPolicy
 		for (int c = 0; c < 3; c++)
 			deficit[c] = Math.max(target[c] - resin[c], 0);
 
-		// Top-2 deficit indices (R's order(..., decreasing=TRUE) tie-break:
-		// lower original index first). Stable sort with deficit-desc primary,
-		// index-asc secondary matches.
 		Integer[] colorIdx = {0, 1, 2};
 		Arrays.sort(colorIdx, (a, b) ->
 		{
@@ -70,8 +83,6 @@ public class MetaPolicy
 		double gap12 = dMax == 0 ? Double.POSITIVE_INFINITY : (dMax - dMid) / (double) dMax;
 		double gap13 = dMax == 0 ? Double.POSITIVE_INFINITY : (dMax - dMin) / (double) dMax;
 
-		// State transition (with hysteresis). When leaving balanced, the next
-		// state is dual_bn if the top-2 are still tight, single_bn otherwise.
 		switch (state)
 		{
 			case SINGLE_BN:
@@ -106,10 +117,6 @@ public class MetaPolicy
 				return balanced(orders, deficit);
 		}
 	}
-
-	// ------------------------------------------------------------------
-	// Sub-policies
-	// ------------------------------------------------------------------
 
 	/**
 	 * single_bn: if ≥2 of the 3 orders give the top-deficit colour, brew all
@@ -158,10 +165,6 @@ public class MetaPolicy
 
 		return singleton(bestDeficitSlot(orders, deficit));
 	}
-
-	// ------------------------------------------------------------------
-	// Helpers
-	// ------------------------------------------------------------------
 
 	private static boolean givesResin(PotionType pt, PotionComponent color)
 	{
@@ -278,7 +281,6 @@ public class MetaPolicy
 			if (count[c] == 0)
 				continue;
 
-			// XXY single colour gets 10; otherwise 20 (XXX, XXY's doubled, all of MAL).
 			int yield = (count[c] == 1 && distinct == 2) ? 10 : 20;
 			score += yield * Math.max(deficit[c], 0);
 		}

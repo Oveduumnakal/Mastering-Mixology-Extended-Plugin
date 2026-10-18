@@ -7,6 +7,10 @@ import java.util.Map;
 
 import net.runelite.api.Client;
 
+/**
+ * The reward goal behind the overlay: the rewards ticked in Reward Tracking, their summed resin cost and how close
+ * the player's current resin is to it.
+ */
 public class Goal
 {
 	private RewardItem rewardItem;
@@ -16,9 +20,7 @@ public class Goal
 	private int itemsAffordable = 0;
 	private int rewardQuantity = 1;
 
-	/*
-	 * Whenever we recalculate the goal, we will create a new ComponentData object for each component for caching
-	 */
+	/** Rebuilt for every component each time the goal is recalculated, so the values are never stale. */
 	private final Map<PotionComponent, ComponentData> componentDataMap = new EnumMap<>(PotionComponent.class);
 
 	public Goal(RewardItem rewardItem)
@@ -62,6 +64,15 @@ public class Goal
 		return componentDataMap.get(component);
 	}
 
+	/**
+	 * Rebuilds the goal from the Reward Tracking settings and the player's current resin.
+	 *
+	 * <p>The cost of every ticked reward is summed per resin colour and the first one supplies the icon. The affordable
+	 * count is limited by the scarcest colour, and the overall progress is the average of the colours' progress.
+	 *
+	 * @param config the plugin config holding the ticked rewards and their quantities
+	 * @param client the client the current resin amounts are read from
+	 */
 	public void recalculate(MasteringMixologyConfig config, Client client)
 	{
 		List<Selection> selected = collectSelections(config);
@@ -69,7 +80,7 @@ public class Goal
 		if (!selected.isEmpty())
 		{
 			multiMode = true;
-			rewardItem = selected.get(0).item; // representative item for the icon
+			rewardItem = selected.get(0).item;
 			displayName = selected.size() == 1
 					? formatSingleDisplayName(selected.get(0))
 					: "Selected rewards (" + selected.size() + ")";
@@ -99,14 +110,12 @@ public class Goal
 			}
 		}
 
-		// Calculate the amount of items affordable based on the component with the lowest affordable amount
 		int minAffordable = componentDataMap.values().stream()
 				.mapToInt(data -> data.affordableAmount)
 				.min()
 				.orElse(0);
 		itemsAffordable = Math.min(minAffordable, rewardQuantity);
 
-		// Overall progress is the average of all component progress
 		overallProgress = componentDataMap.values().stream()
 				.mapToDouble(data -> data.percentageToGoal)
 				.average()
@@ -163,6 +172,7 @@ public class Goal
 		return list;
 	}
 
+	/** A ticked reward and how many of it are wanted. */
 	static final class Selection
 	{
 		final RewardItem item;
@@ -175,6 +185,7 @@ public class Goal
 		}
 	}
 
+	/** One resin colour's stock against the summed goal, with the progress and affordable count derived from them. */
 	public static class ComponentData
 	{
 		final int currentAmount;

@@ -12,6 +12,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+/** Tests for {@link StationGuard}. */
 public class StationGuardTest
 {
 	@Test
@@ -67,25 +68,28 @@ public class StationGuardTest
 				AlchemyObject.RETORT, false, orders, Collections.emptySet()));
 	}
 
+	/**
+	 * With a click delta of 2 and a maximum of 16, 14 + 2 reaches the maximum, so the cap blocks at 14 and not
+	 * at 13.
+	 */
 	@Test
 	public void concentrateCapBlocksWhenOneMoreClickWouldComplete()
 	{
-		// clickDelta 2, max 16: 14 + 2 = 16 -> block at 14, not at 13
 		assertFalse(StationGuard.concentrateCapReached(13, 2, 16));
 		assertTrue(StationGuard.concentrateCapReached(14, 2, 16));
 	}
 
+	/** With a click delta of 3 and a maximum of 16, 13 + 3 reaches the maximum, so the cap blocks at 13. */
 	@Test
 	public void concentrateCapAdaptsToLargerClickDelta()
 	{
-		// clickDelta 3, max 16: 13 + 3 = 16 -> block at 13
 		assertFalse(StationGuard.concentrateCapReached(12, 3, 16));
 		assertTrue(StationGuard.concentrateCapReached(13, 3, 16));
 	}
 
+	/** Any potion type works, because the modifier (concentrated) drives the station. */
 	private static PotionType firstConcentrateType()
 	{
-		// Any potion type works; the modifier (CONCENTRATED) drives the station.
 		return PotionType.values()[0];
 	}
 }

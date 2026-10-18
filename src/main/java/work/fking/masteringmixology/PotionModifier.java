@@ -1,12 +1,16 @@
 package work.fking.masteringmixology;
 
+/**
+ * The extra processing step an order calls for, with the station that does it and the experience its quick action
+ * gives.
+ */
 public enum PotionModifier
 {
-	// Clicking the quick-time event on the Agitator gives 14 experience, this event can happen 1-2 times
+	/** Agitated. Clicking the quick-time event on the Agitator gives 14 experience, and it can happen once or twice. */
 	HOMOGENOUS(AlchemyObject.AGITATOR, 21),
-	// Each click on the Retort gives 2 experience for a max of 10 clicks
+	/** Concentrated. Each click on the Retort gives 2 experience, for a maximum of 10 clicks. */
 	CONCENTRATED(AlchemyObject.RETORT, 20),
-	// Clicking the quick-time event on the Alembic gives 14 experience
+	/** Crystallised. Clicking the quick-time event on the Alembic gives 14 experience. */
 	CRYSTALISED(AlchemyObject.ALEMBIC, 14);
 
 	private static final PotionModifier[] TYPES = PotionModifier.values();

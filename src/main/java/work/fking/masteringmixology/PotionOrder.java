@@ -1,5 +1,9 @@
 package work.fking.masteringmixology;
 
+/**
+ * One potion order on the conveyor: its slot, the potion type and modifier it asks for, and whether it has been
+ * fulfilled.
+ */
 public class PotionOrder
 {
 	private final int idx;

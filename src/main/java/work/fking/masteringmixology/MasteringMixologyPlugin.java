@@ -61,6 +61,11 @@ import static work.fking.masteringmixology.PotionComponent.AGA;
 import static work.fking.masteringmixology.PotionComponent.LYE;
 import static work.fking.masteringmixology.PotionComponent.MOX;
 
+/**
+ * RuneLite plugin that extends the Mastering Mixology minigame: it adds each order's recipe to the interface and
+ * highlights the stations, levers, vessel and quick actions to use next. It also tracks reward goals, recommends
+ * orders with an adaptive meta-strategy, protects against misclicks and offers accessibility colours.
+ */
 @PluginDescriptor(name = "Mastering Mixology Extended")
 public class MasteringMixologyPlugin extends Plugin
 {
@@ -375,6 +380,13 @@ public class MasteringMixologyPlugin extends Plugin
 		inLab = false;
 	}
 
+	/**
+	 * Applies a settings change straight away: re-sorts the orders, refreshes the station highlights and the resin
+	 * display, clears the digweed highlights when they are turned off and recalculates the goal.
+	 *
+	 * <p>The orders are also re-decorated when a highlight-related setting changes, so the player sees the effect
+	 * immediately without waiting for the next order rebuild.
+	 */
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
@@ -388,10 +400,7 @@ public class MasteringMixologyPlugin extends Plugin
 			clientThread.invokeLater(this::refreshStationHighlight);
 
 		if (event.getKey().equals("displayResin"))
-		{
-			// Trigger the potion order update to refresh the resin display
 			clientThread.invokeLater(this::triggerPotionOrderUpdate);
-		}
 
 		if (!config.highlightDigWeed())
 		{
@@ -408,9 +417,6 @@ public class MasteringMixologyPlugin extends Plugin
 			previouslyAboveRewardThreshold = false;
 		}
 
-		// Re-decorate orders when any highlight-related setting changes so
-		// the player sees the effect immediately without waiting for the
-		// next order rebuild.
 		if (event.getKey().equals("highlightRecommendedPotions")
 				|| event.getKey().equals("recommendedPotionColor")
 				|| event.getKey().equals("notRecommendedPotionColor")
@@ -432,6 +438,12 @@ public class MasteringMixologyPlugin extends Plugin
 		clientThread.invokeLater(this::updateMixGuidance);
 	}
 
+	/**
+	 * Keeps the unfinished-potion count and the station highlight in step with the inventory.
+	 *
+	 * <p>The highlight is left alone while a potion is in a station. Otherwise it goes to the station of the first
+	 * potion in the inventory that still needs one.
+	 */
 	@Subscribe
 	public void onItemContainerChanged(ItemContainerChanged event)
 	{
@@ -449,7 +461,6 @@ public class MasteringMixologyPlugin extends Plugin
 		if (!inLab || !config.highlightStations() || event.getContainerId() != InventoryID.INV)
 			return;
 
-		// Do not update the highlight if there's a potion in a station
 		if (alembicPotionType != null || agitatorPotionType != null || retortPotionType != null)
 			return;
 
@@ -461,7 +472,6 @@ public class MasteringMixologyPlugin extends Plugin
 
 		var inventory = event.getItemContainer();
 
-		// Find the first potion item and highlight its station
 		for (var item : inventory.getItems())
 		{
 			var potionType = PotionType.fromItemId(item.getId());
@@ -481,6 +491,16 @@ public class MasteringMixologyPlugin extends Plugin
 		}
 	}
 
+	/**
+	 * Reacts to the lab's varbits and varps.
+	 *
+	 * <p>Delivering a potion resets every order varbit to 0 before setting the new values, so the first order varbit
+	 * dropping to 0 clears all the stations. A station's potion varbit returning to 0 means that station has finished:
+	 * its highlight is removed and the matching order is fulfilled. A progress varbit that drops means a quick action
+	 * failed and a quick-action varbit means one was just popped, so both reset that station's highlight. The
+	 * Agitator's quick action has a window of two ticks and the Alembic's of one, and the highlight is also reset
+	 * once that window has passed. Resin varps recalculate the goal.
+	 */
 	@Subscribe
 	public void onVarbitChanged(VarbitChanged event)
 	{
@@ -488,8 +508,6 @@ public class MasteringMixologyPlugin extends Plugin
 		var varpId = event.getVarpId();
 		var value = event.getValue();
 
-		// Whenever a potion is delivered, all the potion order related varbits are reset to 0 first then
-		// set to the new values. We can use this to clear all the stations.
 		if (varbitId == VARBIT_POTION_ORDER_1)
 		{
 			if (value == 0)
@@ -501,7 +519,6 @@ public class MasteringMixologyPlugin extends Plugin
 		{
 			if (value == 0)
 			{
-				// Finished crystalising
 				unHighlightObject(AlchemyObject.ALEMBIC);
 				tryFulfillOrder(alembicPotionType, PotionModifier.CRYSTALISED);
 				tryHighlightNextStation();
@@ -518,7 +535,6 @@ public class MasteringMixologyPlugin extends Plugin
 		{
 			if (value == 0)
 			{
-				// Finished homogenising
 				unHighlightObject(AlchemyObject.AGITATOR);
 				tryFulfillOrder(agitatorPotionType, PotionModifier.HOMOGENOUS);
 				tryHighlightNextStation();
@@ -535,7 +551,6 @@ public class MasteringMixologyPlugin extends Plugin
 		{
 			if (value == 0)
 			{
-				// Finished concentrating
 				unHighlightObject(AlchemyObject.RETORT);
 				tryFulfillOrder(retortPotionType, PotionModifier.CONCENTRATED);
 				tryHighlightNextStation();
@@ -610,7 +625,6 @@ public class MasteringMixologyPlugin extends Plugin
 		{
 			if (agitatorQuickActionTicks == 2)
 			{
-				// quick action was triggered two ticks ago, so it's now too late
 				resetStationHighlight(AlchemyObject.AGITATOR);
 				agitatorQuickActionTicks = 0;
 			}
@@ -619,10 +633,7 @@ public class MasteringMixologyPlugin extends Plugin
 				agitatorQuickActionTicks = 2;
 
 			if (value < previousAgitatorProgess)
-			{
-				// progress was set back due to a quick action failure
 				resetStationHighlight(AlchemyObject.AGITATOR);
-			}
 
 			previousAgitatorProgess = value;
 		}
@@ -630,16 +641,12 @@ public class MasteringMixologyPlugin extends Plugin
 		{
 			if (alembicQuickActionTicks == 1)
 			{
-				// quick action was triggered last tick, so it's now too late
 				resetStationHighlight(AlchemyObject.ALEMBIC);
 				alembicQuickActionTicks = 0;
 			}
 
 			if (value < previousAlembicProgress)
-			{
-				// progress was set back due to a quick action failure
 				resetStationHighlight(AlchemyObject.ALEMBIC);
-			}
 
 			previousAlembicProgress = value;
 		}
@@ -649,12 +656,10 @@ public class MasteringMixologyPlugin extends Plugin
 		}
 		else if (varbitId == VARBIT_AGITATOR_QUICKACTION)
 		{
-			// agitator quick action was just successfully popped
 			resetStationHighlight(AlchemyObject.AGITATOR);
 		}
 		else if (varbitId == VARBIT_ALEMBIC_QUICKACTION)
 		{
-			// alembic quick action was just successfully popped
 			resetStationHighlight(AlchemyObject.ALEMBIC);
 		}
 		else if (varpId == VARP_MOX_RESIN || varpId == VARP_AGA_RESIN || varpId == VARP_LYE_RESIN)
@@ -696,6 +701,13 @@ public class MasteringMixologyPlugin extends Plugin
 				|| varbitId == VARBIT_RETORT_POTION;
 	}
 
+	/**
+	 * Notifies once when the goal first becomes affordable.
+	 *
+	 * <p>{@link Goal} has already summed the costs, including the pack quantities, and its overall progress
+	 * is the mean of each colour's clamped percentage, so it reaches 1.0 only when every colour meets its
+	 * summed goal.
+	 */
 	private void checkRewardThresholdNotification()
 	{
 		if (!goal.isMultiMode())
@@ -704,10 +716,6 @@ public class MasteringMixologyPlugin extends Plugin
 			return;
 		}
 
-		// Goal already summed the costs (including per-pack quantities) and
-		// computed per-component progress. overallProgress is the mean of
-		// each component's clamped percentage, so it reaches 1.0 only when
-		// every component meets its summed goal.
 		boolean nowAbove = goal.getOverallProgress() >= 1.0;
 		if (nowAbove && !previouslyAboveRewardThreshold)
 		{
@@ -882,6 +890,12 @@ public class MasteringMixologyPlugin extends Plugin
 		return ids;
 	}
 
+	/**
+	 * Highlights a station's quick action when its spot animation appears.
+	 *
+	 * <p>The Alembic's quick action has a window of one tick and the Agitator's a window of two, so a counter goes
+	 * 0, 1 (and 2 for the Agitator) and the highlight is removed on that station's next progress update.
+	 */
 	@Subscribe
 	public void onGraphicsObjectCreated(GraphicsObjectCreated event)
 	{
@@ -900,16 +914,12 @@ public class MasteringMixologyPlugin extends Plugin
 				client.playSoundEffect(FOUND_GEM);
 			}
 
-			// start counting ticks for alembic so we know to un-highlight on the next alembic varbit update
-			// note this quick action has a 1 tick window, so we use an int that goes 0 -> 1 -> unhighlight
 			alembicQuickActionTicks = 1;
 		}
 
 		if (spotAnimId == SPOT_ANIM_AGITATOR && agitatorPotionType != null)
 		{
 			highlightObject(AlchemyObject.AGITATOR, config.stationQuickActionHighlightColor());
-			// start counting ticks for agitator so we know to un-highlight on the next agitator varbit update
-			// note this quick action has a 2-tick window, so we use an int that goes 0 -> 1 -> 2 -> unhighlight
 			agitatorQuickActionTicks = 1;
 		}
 	}
@@ -933,31 +943,36 @@ public class MasteringMixologyPlugin extends Plugin
 			appendResins(baseWidget);
 	}
 
+	/**
+	 * Appends each order's recipe and status to its row in the vanilla interface, colours the row from the
+	 * recommendation and moves the rows to match the chosen sorting.
+	 *
+	 * <p>The rows are found from the interface script (Joshua-F/cs2-scripts, {@code [proc,script7063].cs2}, line 26).
+	 * The meta-policy recommendation is computed once per rebuild, because the orders and the resin state are both
+	 * stable until the next refresh. It is null when highlighting is disabled, for instance when the toggle is off or
+	 * no rewards are tracked yet.
+	 *
+	 * <p>The filtered children are laid out as a text for the heading, then a graphic and a text for each order:
+	 * <pre>{@code
+	 * TEXT - Potion Orders
+	 * GRAPHIC - 5673
+	 * TEXT - Mammoth-might mix
+	 * GRAPHIC - 5672
+	 * TEXT - <str>Mixalot</str>
+	 * GRAPHIC - 5673
+	 * TEXT - Marley's moonlight
+	 * }</pre>
+	 */
 	private void updatePotionOrdersComponent(Widget baseWidget)
 	{
-		// https://github.com/Joshua-F/cs2-scripts/blob/7cc261be62a40a6390de3e1f770259038660af10/scripts/%5Bproc%2Cscript7063%5D.cs2#L26
 		var children = selectChildren(baseWidget,
 				widget -> widget.getType() == WidgetType.GRAPHIC || widget.getType() == WidgetType.TEXT);
 
 		if (children.isEmpty())
 			return;
 
-		// Compute the meta-policy recommendation once per rebuild (the orders
-		// and the resin state are both stable until the next refresh). null
-		// means "highlighting disabled" -- e.g. toggle off or no rewards
-		// tracked yet.
 		recommendedSlots = computeRecommendedSlots();
 
-		/*
-		 * Filtered children layout:
-		 * TEXT - Potion Orders
-		 * GRAPHIC - 5673
-		 * TEXT - Mammoth-might mix
-		 * GRAPHIC - 5672
-		 * TEXT - <str>Mixalot</str>
-		 * GRAPHIC - 5673
-		 * TEXT - Marley's moonlight
-		 */
 		for (int i = 0; i < potionOrders.size(); i++)
 		{
 			var order = potionOrders.get(i);
@@ -997,7 +1012,6 @@ public class MasteringMixologyPlugin extends Plugin
 			if (i != order.idx())
 			{
 				LOGGER.debug("Updating order {} position from {} to {}", order, order.idx(), i);
-				// update component position
 				var y = 20 + (i * 26) + 3;
 				orderGraphic.setOriginalY(y);
 				orderText.setOriginalY(y);
@@ -1033,6 +1047,10 @@ public class MasteringMixologyPlugin extends Plugin
 	 * Returns the order indices the adaptive meta-policy recommends brewing
 	 * this turn, or null if highlighting is disabled (config off, no
 	 * rewards selected, or order data missing).
+	 *
+	 * <p>The target is the summed cost of the selected rewards, which {@link Goal} already computes for the overlay
+	 * and the threshold notification. The orders are placed back in their original conveyor slots, because
+	 * {@code potionOrders} may be sorted by the sorting setting.
 	 */
 	private Set<Integer> computeRecommendedSlots()
 	{
@@ -1042,8 +1060,6 @@ public class MasteringMixologyPlugin extends Plugin
 		if (potionOrders.size() != 3)
 			return null;
 
-		// Target = sum of selected reward costs (the Goal already handles
-		// this for the overlay / threshold notification).
 		if (!goal.isMultiMode())
 			return null;
 
@@ -1062,9 +1078,6 @@ public class MasteringMixologyPlugin extends Plugin
 		if (target[0] == 0 && target[1] == 0 && target[2] == 0)
 			return null;
 
-		// Build the 3-slot PotionType array in original conveyor order.
-		// potionOrders may be sorted by config.potionOrderSorting() so we
-		// re-index by order.idx().
 		PotionType[] ordersBySlot = new PotionType[3];
 		for (PotionOrder po : potionOrders)
 			ordersBySlot[po.idx()] = po.potionType();
@@ -1112,6 +1125,10 @@ public class MasteringMixologyPlugin extends Plugin
 		tryHighlightNextStation();
 	}
 
+	/**
+	 * Outlines a lab object in the given colour. The aga lever is a wall decoration rather than a scenery object, so
+	 * the tile's decorative object is checked when no scenery object matches.
+	 */
 	public void highlightObject(AlchemyObject alchemyObject, Color color)
 	{
 		var worldView = client.getTopLevelWorldView();
@@ -1141,7 +1158,6 @@ public class MasteringMixologyPlugin extends Plugin
 			}
 		}
 
-		// The aga lever is actually a wall decoration, not a scenery object
 		var decorativeObject = tile.getDecorativeObject();
 
 		if (decorativeObject != null && decorativeObject.getId() == alchemyObject.objectId())
@@ -1346,9 +1362,12 @@ public class MasteringMixologyPlugin extends Plugin
 		triggerPotionOrderUpdate();
 	}
 
+	/**
+	 * Queues a fake change of the potion order varbit, which makes the client script that builds the order list run
+	 * again.
+	 */
 	public void triggerPotionOrderUpdate()
 	{
-		// Trigger a fake varbit update to force run the clientscript proc
 		var varbitType = client.getVarbit(VARBIT_POTION_ORDER_1);
 
 		if (varbitType != null)
@@ -1482,6 +1501,7 @@ public class MasteringMixologyPlugin extends Plugin
 		goal.recalculate(config, client);
 	}
 
+	/** A lab object that is outlined, with the colour, outline width and feather to draw it with. */
 	public static class HighlightedObject
 	{
 		private final TileObject object;

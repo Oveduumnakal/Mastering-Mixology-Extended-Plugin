@@ -11,6 +11,7 @@ import net.runelite.client.config.Range;
 
 import static work.fking.masteringmixology.MasteringMixologyConfig.CONFIG_GROUP;
 
+/** The plugin's settings, grouped into collapsible sections. */
 @ConfigGroup(CONFIG_GROUP)
 public interface MasteringMixologyConfig extends Config
 {

@@ -2,10 +2,13 @@ package work.fking.masteringmixology;
 
 import java.util.Comparator;
 
+/** Orderings for the potion orders shown in the interface. */
 public class PotionComparators
 {
-	// Sort by modifier, in the order CRYSTALISED > HOMOGENOUS > CONCENTRATED
-	// And then by PotionType name alphabetically
+	/**
+	 * Orders by modifier, crystalised before homogenous before concentrated, then by potion type name.
+	 * Concentrate comes last to avoid misclicks on the retort.
+	 */
 	public static Comparator<PotionOrder> byStation()
 	{
 		return Comparator.comparingInt((PotionOrder order) ->
@@ -25,6 +28,7 @@ public class PotionComparators
 				.thenComparing(order -> order.potionType().name());
 	}
 
+	/** Orders by modifier, crystalised then concentrated then homogenous (the "Shortest Path" sorting option). */
 	public static Comparator<PotionOrder> shortestPath()
 	{
 		return Comparator.comparing(order ->

@@ -11,9 +11,10 @@ import net.runelite.client.ui.overlay.components.ComponentConstants;
 import net.runelite.client.ui.overlay.components.LayoutableRenderableEntity;
 import net.runelite.client.ui.overlay.components.TextComponent;
 
-// Progress bar with outlined text. Mirrors ProgressBarComponent's interface
-// but renders each label via TextComponent with setOutline(true) so the
-// text stays readable over the coloured bar fill.
+/**
+ * Progress bar with outlined text. Mirrors the interface of {@code ProgressBarComponent}, but draws each label
+ * through a {@code TextComponent} with outlining on, so the text stays readable over the coloured bar fill.
+ */
 class OutlinedProgressBarComponent implements LayoutableRenderableEntity
 {
 	private static final int BAR_HEIGHT = 16;
