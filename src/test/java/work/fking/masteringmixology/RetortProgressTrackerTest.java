@@ -8,7 +8,6 @@ import static org.junit.Assert.assertTrue;
 
 public class RetortProgressTrackerTest
 {
-
 	@Test
 	public void ignoresProgressWhenNoPotionLoaded()
 	{

@@ -1,11 +1,12 @@
 package work.fking.masteringmixology;
 
-import com.google.common.collect.ImmutableMap;
-
 import java.util.Arrays;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
+
 import net.runelite.api.gameval.ItemID;
+
 import static work.fking.masteringmixology.PotionComponent.AGA;
 import static work.fking.masteringmixology.PotionComponent.LYE;
 import static work.fking.masteringmixology.PotionComponent.MOX;
@@ -35,6 +36,7 @@ public enum PotionType
 			builder.put(p.itemId(), p);
 			builder.put(p.modifiedItemId(), p);
 		}
+
 		ITEM_MAP = builder.build();
 	}
 
@@ -64,18 +66,16 @@ public enum PotionType
 	public static PotionType fromIdx(int potionTypeId)
 	{
 		if (potionTypeId < 0 || potionTypeId >= TYPES.length)
-		{
 			return null;
-		}
+
 		return TYPES[potionTypeId];
 	}
 
 	private static String colorizeRecipe(PotionComponent[] components)
 	{
 		if (components.length != 3)
-		{
 			throw new IllegalArgumentException("Invalid potion components: " + Arrays.toString(components));
-		}
+
 		return colorizeRecipeComponent(components[0])
 				+ colorizeRecipeComponent(components[1])
 				+ colorizeRecipeComponent(components[2]);
@@ -90,9 +90,10 @@ public enum PotionType
 	{
 		StringBuilder sb = new StringBuilder(18);
 		for (PotionComponent c : components)
-		{
-			sb.append("<img=").append(iconIdx[c.ordinal()]).append('>');
-		}
+			sb.append("<img=")
+					.append(iconIdx[c.ordinal()])
+					.append('>');
+
 		return sb.toString();
 	}
 

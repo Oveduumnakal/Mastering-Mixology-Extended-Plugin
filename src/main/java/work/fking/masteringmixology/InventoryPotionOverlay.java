@@ -1,13 +1,13 @@
 package work.fking.masteringmixology;
 
+import java.awt.Color;
+import java.awt.Graphics2D;
+import javax.annotation.Nullable;
+import javax.inject.Inject;
+
 import net.runelite.api.widgets.WidgetItem;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.WidgetItemOverlay;
-
-import javax.annotation.Nullable;
-import javax.inject.Inject;
-import java.awt.Color;
-import java.awt.Graphics2D;
 
 public class InventoryPotionOverlay extends WidgetItemOverlay
 {
@@ -26,16 +26,12 @@ public class InventoryPotionOverlay extends WidgetItemOverlay
 	public void renderItemOverlay(Graphics2D graphics2D, int itemId, WidgetItem widgetItem)
 	{
 		if (!plugin.isInLab() || config.inventoryPotionTagType() == InventoryPotionTagType.NONE)
-		{
 			return;
-		}
 
 		var potion = PotionType.fromItemId(itemId);
 
 		if (potion == null)
-		{
 			return;
-		}
 
 		var bounds = widgetItem.getCanvasBounds();
 		var x = bounds.x + 5;

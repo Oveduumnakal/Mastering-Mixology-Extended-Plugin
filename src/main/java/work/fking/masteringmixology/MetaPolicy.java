@@ -20,7 +20,6 @@ import java.util.Set;
  */
 public class MetaPolicy
 {
-
 	public enum State { SINGLE_BN, DUAL_BN, BALANCED }
 
 	/** Recommended thresholds from the sweep at 61k/53k/71k. See STRATEGY.md §7. */
@@ -53,9 +52,7 @@ public class MetaPolicy
 	{
 		int[] deficit = new int[3];
 		for (int c = 0; c < 3; c++)
-		{
 			deficit[c] = Math.max(target[c] - resin[c], 0);
-		}
 
 		// Top-2 deficit indices (R's order(..., decreasing=TRUE) tie-break:
 		// lower original index first). Stable sort with deficit-desc primary,
@@ -79,29 +76,22 @@ public class MetaPolicy
 		{
 			case SINGLE_BN:
 				if (gap13 < T_BALANCED_IN)
-				{
 					state = State.BALANCED;
-				}
 				else if (gap12 < T_DUAL_IN)
-				{
 					state = State.DUAL_BN;
-				}
+
 				break;
 			case DUAL_BN:
 				if (gap13 < T_BALANCED_IN)
-				{
 					state = State.BALANCED;
-				}
 				else if (gap12 > T_DUAL_OUT)
-				{
 					state = State.SINGLE_BN;
-				}
+
 				break;
 			case BALANCED:
 				if (gap13 > T_BALANCED_OUT)
-				{
 					state = (gap12 < T_DUAL_IN) ? State.DUAL_BN : State.SINGLE_BN;
-				}
+
 				break;
 		}
 
@@ -131,13 +121,11 @@ public class MetaPolicy
 		PotionComponent top = PotionComponent.ENTRIES[topColorOrd];
 		Set<Integer> giving = slotsGiving(orders, top);
 		if (giving.size() >= 2)
-		{
 			return all3();
-		}
+
 		if (!giving.isEmpty())
-		{
 			return giving;
-		}
+
 		return singleton(bestDeficitSlot(orders, deficit));
 	}
 
@@ -150,9 +138,8 @@ public class MetaPolicy
 		PotionComponent top = PotionComponent.ENTRIES[topOrd];
 		PotionComponent mid = PotionComponent.ENTRIES[midOrd];
 		if (countSlotsGivingBoth(orders, top, mid) >= 2)
-		{
 			return all3();
-		}
+
 		return singleBn(orders, deficit, topOrd);
 	}
 
@@ -167,9 +154,8 @@ public class MetaPolicy
 	private Set<Integer> balanced(PotionType[] orders, int[] deficit)
 	{
 		if (anyMal(orders) || allMultiResin(orders))
-		{
 			return all3();
-		}
+
 		return singleton(bestDeficitSlot(orders, deficit));
 	}
 
@@ -180,16 +166,14 @@ public class MetaPolicy
 	private static boolean givesResin(PotionType pt, PotionComponent color)
 	{
 		if (pt == null)
-		{
 			return false;
-		}
+
 		for (PotionComponent c : pt.components())
 		{
 			if (c == color)
-			{
 				return true;
-			}
 		}
+
 		return false;
 	}
 
@@ -199,10 +183,9 @@ public class MetaPolicy
 		for (int i = 0; i < orders.length; i++)
 		{
 			if (givesResin(orders[i], color))
-			{
 				result.add(i);
-			}
 		}
+
 		return result;
 	}
 
@@ -212,24 +195,21 @@ public class MetaPolicy
 		for (PotionType pt : orders)
 		{
 			if (givesResin(pt, a) && givesResin(pt, b))
-			{
 				count++;
-			}
 		}
+
 		return count;
 	}
 
 	private static boolean isMultiResin(PotionType pt)
 	{
 		if (pt == null)
-		{
 			return false;
-		}
+
 		EnumSet<PotionComponent> uniq = EnumSet.noneOf(PotionComponent.class);
 		for (PotionComponent c : pt.components())
-		{
 			uniq.add(c);
-		}
+
 		return uniq.size() >= 2;
 	}
 
@@ -238,24 +218,21 @@ public class MetaPolicy
 		for (PotionType pt : orders)
 		{
 			if (!isMultiResin(pt))
-			{
 				return false;
-			}
 		}
+
 		return true;
 	}
 
 	private static boolean isMal(PotionType pt)
 	{
 		if (pt == null)
-		{
 			return false;
-		}
+
 		EnumSet<PotionComponent> uniq = EnumSet.noneOf(PotionComponent.class);
 		for (PotionComponent c : pt.components())
-		{
 			uniq.add(c);
-		}
+
 		return uniq.size() == 3;
 	}
 
@@ -264,10 +241,9 @@ public class MetaPolicy
 		for (PotionType pt : orders)
 		{
 			if (isMal(pt))
-			{
 				return true;
-			}
 		}
+
 		return false;
 	}
 
@@ -283,33 +259,30 @@ public class MetaPolicy
 	private static int slotScore(PotionType pt, int[] deficit)
 	{
 		if (pt == null)
-		{
 			return Integer.MIN_VALUE;
-		}
+
 		int[] count = new int[3];
 		for (PotionComponent c : pt.components())
-		{
 			count[c.ordinal()]++;
-		}
+
 		int distinct = 0;
 		for (int c = 0; c < 3; c++)
 		{
 			if (count[c] > 0)
-			{
 				distinct++;
-			}
 		}
+
 		int score = 0;
 		for (int c = 0; c < 3; c++)
 		{
 			if (count[c] == 0)
-			{
 				continue;
-			}
+
 			// XXY single colour gets 10; otherwise 20 (XXX, XXY's doubled, all of MAL).
 			int yield = (count[c] == 1 && distinct == 2) ? 10 : 20;
 			score += yield * Math.max(deficit[c], 0);
 		}
+
 		return score;
 	}
 
@@ -326,6 +299,7 @@ public class MetaPolicy
 				bestIdx = i;
 			}
 		}
+
 		return bestIdx;
 	}
 

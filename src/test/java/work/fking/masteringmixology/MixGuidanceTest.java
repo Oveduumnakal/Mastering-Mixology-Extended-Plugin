@@ -4,6 +4,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -23,7 +24,6 @@ import static work.fking.masteringmixology.PotionType.MIXALOT;
  */
 public class MixGuidanceTest
 {
-
 	private static final int EMPTY = 0;
 	private static final int M = 1;
 	private static final int A = 2;
@@ -38,9 +38,8 @@ public class MixGuidanceTest
 	{
 		Map<PotionType, Integer> map = new EnumMap<>(PotionType.class);
 		for (PotionType type : types)
-		{
 			map.merge(type, 1, Integer::sum);
-		}
+
 		return map;
 	}
 
@@ -82,7 +81,8 @@ public class MixGuidanceTest
 		assertEquals(MixGuidance.LeverMode.BLOCKED, full.mode());
 		assertFalse(full.allows(MOX));
 
-		assertEquals(MixGuidance.LeverMode.BLOCKED, MixGuidance.leverState(null, new int[]{EMPTY, EMPTY, EMPTY}, 0).mode());
+		assertEquals(MixGuidance.LeverMode.BLOCKED,
+				MixGuidance.leverState(null, new int[]{EMPTY, EMPTY, EMPTY}, 0).mode());
 		assertEquals(MixGuidance.LeverMode.FREE, MixGuidance.leverState(null, new int[]{M, EMPTY, EMPTY}, 0).mode());
 
 		MixGuidance.LeverState pull = MixGuidance.leverState(MIXALOT, new int[]{M, EMPTY, EMPTY}, 0);

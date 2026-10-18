@@ -1,6 +1,7 @@
 package work.fking.masteringmixology;
 
 import net.runelite.api.gameval.ItemID;
+
 import static work.fking.masteringmixology.PotionComponent.AGA;
 import static work.fking.masteringmixology.PotionComponent.LYE;
 import static work.fking.masteringmixology.PotionComponent.MOX;

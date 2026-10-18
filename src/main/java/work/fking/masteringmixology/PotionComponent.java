@@ -1,6 +1,7 @@
 package work.fking.masteringmixology;
 
 import java.awt.Color;
+
 import net.runelite.api.gameval.SpriteID;
 
 public enum PotionComponent

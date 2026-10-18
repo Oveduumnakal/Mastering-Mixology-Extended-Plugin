@@ -1,6 +1,23 @@
 package work.fking.masteringmixology;
 
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import javax.inject.Inject;
+
 import com.google.inject.Provides;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.runelite.api.Client;
 import net.runelite.api.FontID;
 import net.runelite.api.GameState;
@@ -36,22 +53,6 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ColorUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static work.fking.masteringmixology.AlchemyObject.AGA_LEVER;
 import static work.fking.masteringmixology.AlchemyObject.LYE_LEVER;
@@ -63,7 +64,6 @@ import static work.fking.masteringmixology.PotionComponent.MOX;
 @PluginDescriptor(name = "Mastering Mixology Extended")
 public class MasteringMixologyPlugin extends Plugin
 {
-
 	private static final Logger LOGGER = LoggerFactory.getLogger(MasteringMixologyPlugin.class);
 
 	private static final int PROC_MASTERING_MIXOLOGY_BUILD_POTION_ORDERS = 7063;
@@ -242,9 +242,7 @@ public class MasteringMixologyPlugin extends Plugin
 		clientThread.invokeLater(this::registerResinIcons);
 
 		if (client.getGameState() == GameState.LOGGED_IN)
-		{
 			clientThread.invokeLater(this::initialize);
-		}
 	}
 
 	private void registerResinIcons()
@@ -254,11 +252,11 @@ public class MasteringMixologyPlugin extends Plugin
 			applyResinIconPalettes();
 			return;
 		}
+
 		net.runelite.api.IndexedSprite[] mod = client.getModIcons();
 		if (mod == null)
-		{
 			return;
-		}
+
 		final int count = SKIP_ICON + 1;
 		int base = mod.length;
 		net.runelite.api.IndexedSprite[] extended = Arrays.copyOf(mod, base + count);
@@ -271,6 +269,7 @@ public class MasteringMixologyPlugin extends Plugin
 			indices[i] = base + i;
 			sprites[i] = s;
 		}
+
 		client.setModIcons(extended);
 		resinIconIdx = indices;
 		resinIconSprites = sprites;
@@ -288,6 +287,7 @@ public class MasteringMixologyPlugin extends Plugin
 			boolean edge = x == 0 || x == size - 1 || y == 0 || y == size - 1;
 			pixels[i] = (byte) (edge ? 1 : 2);
 		}
+
 		s.setPixels(pixels);
 		s.setPalette(blockPalette(color));
 		s.setWidth(size);
@@ -308,34 +308,29 @@ public class MasteringMixologyPlugin extends Plugin
 	private Color resinIconColor(int icon)
 	{
 		if (icon == SKIP_ICON)
-		{
 			return config.accessibilitySkipColor();
-		}
+
 		return effectiveComponentColor(PotionComponent.ENTRIES[icon]);
 	}
 
 	private void applyResinIconPalettes()
 	{
 		if (resinIconSprites == null)
-		{
 			return;
-		}
+
 		for (int i = 0; i < resinIconSprites.length; i++)
 		{
 			net.runelite.api.IndexedSprite s = resinIconSprites[i];
 			if (s != null)
-			{
 				s.setPalette(blockPalette(resinIconColor(i)));
-			}
 		}
 	}
 
 	Color effectiveComponentColor(PotionComponent c)
 	{
 		if (!config.accessibilityMode())
-		{
 			return c.color();
-		}
+
 		switch (c)
 		{
 			case MOX: return config.accessibilityMoxColor();
@@ -358,18 +353,15 @@ public class MasteringMixologyPlugin extends Plugin
 	public void onGameStateChanged(GameStateChanged event)
 	{
 		if (event.getGameState() == GameState.LOGIN_SCREEN || event.getGameState() == GameState.HOPPING)
-		{
 			highlightedObjects.clear();
-		}
 	}
 
 	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded event)
 	{
 		if (event.getGroupId() != COMPONENT_POTION_ORDERS_GROUP_ID)
-		{
 			return;
-		}
+
 		initialize();
 	}
 
@@ -377,9 +369,7 @@ public class MasteringMixologyPlugin extends Plugin
 	public void onWidgetClosed(WidgetClosed event)
 	{
 		if (event.getGroupId() != COMPONENT_POTION_ORDERS_GROUP_ID)
-		{
 			return;
-		}
 
 		highlightedObjects.clear();
 		inLab = false;
@@ -389,19 +379,13 @@ public class MasteringMixologyPlugin extends Plugin
 	public void onConfigChanged(ConfigChanged event)
 	{
 		if (!event.getGroup().equals(MasteringMixologyConfig.CONFIG_GROUP))
-		{
 			return;
-		}
 
 		if (event.getKey().equals("potionOrderSorting"))
-		{
 			clientThread.invokeLater(this::updatePotionOrders);
-		}
 
 		if (event.getKey().equals("highlightStations") || event.getKey().equals("waitForFullOrder"))
-		{
 			clientThread.invokeLater(this::refreshStationHighlight);
-		}
 
 		if (event.getKey().equals("displayResin"))
 		{
@@ -417,7 +401,8 @@ public class MasteringMixologyPlugin extends Plugin
 			unHighlightObject(AlchemyObject.DIGWEED_NORTH_WEST);
 		}
 
-		if (event.getKey().equals("showResinBars") || event.getKey().startsWith("track") || event.getKey().endsWith("Quantity"))
+		if (event.getKey().equals("showResinBars") || event.getKey().startsWith("track")
+				|| event.getKey().endsWith("Quantity"))
 		{
 			recalculateGoalData();
 			previouslyAboveRewardThreshold = false;
@@ -442,9 +427,7 @@ public class MasteringMixologyPlugin extends Plugin
 				|| event.getKey().equals("accessibilityAgaColor")
 				|| event.getKey().equals("accessibilityLyeColor")
 				|| event.getKey().equals("accessibilitySkipColor"))
-		{
 			clientThread.invokeLater(this::applyResinIconPalettes);
-		}
 
 		clientThread.invokeLater(this::updateMixGuidance);
 	}
@@ -457,26 +440,25 @@ public class MasteringMixologyPlugin extends Plugin
 			int unfinished = countUnfinishedInInventory();
 			if (unfinished > unfinishedInInventory
 					&& MixGuidance.vesselFull(mixerSlots(), client.getVarbitValue(VARBIT_MIXING_VESSEL_POTION)))
-			{
 				vesselCollected = true;
-			}
+
 			unfinishedInInventory = unfinished;
 			updateMixGuidance();
 		}
+
 		if (!inLab || !config.highlightStations() || event.getContainerId() != InventoryID.INV)
-		{
 			return;
-		}
+
 		// Do not update the highlight if there's a potion in a station
 		if (alembicPotionType != null || agitatorPotionType != null || retortPotionType != null)
-		{
 			return;
-		}
+
 		if (waitingForFullOrder())
 		{
 			unHighlightAllStations();
 			return;
 		}
+
 		var inventory = event.getItemContainer();
 
 		// Find the first potion item and highlight its station
@@ -485,9 +467,8 @@ public class MasteringMixologyPlugin extends Plugin
 			var potionType = PotionType.fromItemId(item.getId());
 
 			if (potionType == null || potionType.modifiedItemId() == item.getId())
-			{
 				continue;
-			}
+
 			for (var order : potionOrders)
 			{
 				if (order.potionType() == potionType && !order.fulfilled())
@@ -512,13 +493,9 @@ public class MasteringMixologyPlugin extends Plugin
 		if (varbitId == VARBIT_POTION_ORDER_1)
 		{
 			if (value == 0)
-			{
 				unHighlightAllStations();
-			}
 			else
-			{
 				clientThread.invokeAtTickEnd(this::updatePotionOrders);
-			}
 		}
 		else if (varbitId == VARBIT_ALEMBIC_POTION)
 		{
@@ -578,9 +555,8 @@ public class MasteringMixologyPlugin extends Plugin
 			if (value == 1)
 			{
 				if (config.highlightDigWeed())
-				{
 					highlightObject(AlchemyObject.DIGWEED_NORTH_EAST, config.digweedHighlightColor());
-				}
+
 				notifier.notify(config.notifyDigWeed(), "A digweed has spawned north east.");
 			}
 			else
@@ -593,9 +569,8 @@ public class MasteringMixologyPlugin extends Plugin
 			if (value == 1)
 			{
 				if (config.highlightDigWeed())
-				{
 					highlightObject(AlchemyObject.DIGWEED_SOUTH_EAST, config.digweedHighlightColor());
-				}
+
 				notifier.notify(config.notifyDigWeed(), "A digweed has spawned south east.");
 			}
 			else
@@ -608,9 +583,8 @@ public class MasteringMixologyPlugin extends Plugin
 			if (value == 1)
 			{
 				if (config.highlightDigWeed())
-				{
 					highlightObject(AlchemyObject.DIGWEED_SOUTH_WEST, config.digweedHighlightColor());
-				}
+
 				notifier.notify(config.notifyDigWeed(), "A digweed has spawned south west.");
 			}
 			else
@@ -623,9 +597,8 @@ public class MasteringMixologyPlugin extends Plugin
 			if (value == 1)
 			{
 				if (config.highlightDigWeed())
-				{
 					highlightObject(AlchemyObject.DIGWEED_NORTH_WEST, config.digweedHighlightColor());
-				}
+
 				notifier.notify(config.notifyDigWeed(), "A digweed has spawned north west.");
 			}
 			else
@@ -641,15 +614,16 @@ public class MasteringMixologyPlugin extends Plugin
 				resetStationHighlight(AlchemyObject.AGITATOR);
 				agitatorQuickActionTicks = 0;
 			}
+
 			if (agitatorQuickActionTicks == 1)
-			{
 				agitatorQuickActionTicks = 2;
-			}
+
 			if (value < previousAgitatorProgess)
 			{
 				// progress was set back due to a quick action failure
 				resetStationHighlight(AlchemyObject.AGITATOR);
 			}
+
 			previousAgitatorProgess = value;
 		}
 		else if (varbitId == VARBIT_ALEMBIC_PROGRESS)
@@ -660,11 +634,13 @@ public class MasteringMixologyPlugin extends Plugin
 				resetStationHighlight(AlchemyObject.ALEMBIC);
 				alembicQuickActionTicks = 0;
 			}
+
 			if (value < previousAlembicProgress)
 			{
 				// progress was set back due to a quick action failure
 				resetStationHighlight(AlchemyObject.ALEMBIC);
 			}
+
 			previousAlembicProgress = value;
 		}
 		else if (varbitId == VarbitID.MM_RETORT_PROGRESS)
@@ -688,22 +664,18 @@ public class MasteringMixologyPlugin extends Plugin
 		}
 
 		if (value != 0 && isMixerSlot(varbitId) && !pendingLeverPulls.isEmpty())
-		{
 			pendingLeverPulls.remove(0);
-		}
+
 		if (inLab && affectsMixGuidance(varbitId))
-		{
 			updateMixGuidance();
-		}
 	}
 
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
 		if (pendingLeverPulls.isEmpty() || client.getTickCount() < pendingLeverPullsExpireTick)
-		{
 			return;
-		}
+
 		pendingLeverPulls.clear();
 		updateMixGuidance();
 	}
@@ -731,6 +703,7 @@ public class MasteringMixologyPlugin extends Plugin
 			previouslyAboveRewardThreshold = false;
 			return;
 		}
+
 		// Goal already summed the costs (including per-pack quantities) and
 		// computed per-component progress. overallProgress is the mean of
 		// each component's clamped percentage, so it reaches 1.0 only when
@@ -741,13 +714,15 @@ public class MasteringMixologyPlugin extends Plugin
 			notifier.notify(config.thresholdNotification(),
 					"You have enough resin to purchase your selected Mastering Mixology rewards.");
 		}
+
 		previouslyAboveRewardThreshold = nowAbove;
 	}
 
 	@Subscribe
 	public void onSoundEffectPlayed(SoundEffectPlayed event)
 	{
-		if (inLab && alembicPotionType != null && event.getSoundId() == FOUND_GEM && event.getDelay() > 0 && config.soundEffectAlembic())
+		if (inLab && alembicPotionType != null && event.getSoundId() == FOUND_GEM && event.getDelay() > 0
+				&& config.soundEffectAlembic())
 		{
 			LOGGER.debug("client found_gem sound effect detected during Alembic, blocking");
 			event.consume();
@@ -758,46 +733,40 @@ public class MasteringMixologyPlugin extends Plugin
 	public void onMenuOptionClicked(MenuOptionClicked event)
 	{
 		if (!inLab)
-		{
 			return;
-		}
+
 		MenuAction action = event.getMenuAction();
 		if (action != MenuAction.GAME_OBJECT_FIRST_OPTION
 				&& action != MenuAction.GAME_OBJECT_SECOND_OPTION
 				&& action != MenuAction.GAME_OBJECT_THIRD_OPTION
 				&& action != MenuAction.GAME_OBJECT_FOURTH_OPTION
 				&& action != MenuAction.GAME_OBJECT_FIFTH_OPTION)
-		{
 			return;
-		}
+
 		if (isLeverBlocked(event.getId()) || isVesselBlocked(event.getId()))
 		{
 			event.consume();
 			return;
 		}
+
 		recordLeverPull(event.getId());
 		AlchemyObject station = StationGuard.stationFromTarget(event.getMenuTarget());
 		if (station == null)
-		{
 			return;
-		}
+
 		if (isCapBlocked(station) || isLockBlocked(station))
-		{
 			event.consume();
-		}
 	}
 
 	private boolean isLeverBlocked(int objectId)
 	{
 		if (!config.leverClickProtection())
-		{
 			return false;
-		}
+
 		PotionComponent lever = leverComponent(objectId);
 		if (lever == null)
-		{
 			return false;
-		}
+
 		updateMixGuidance();
 		return !leverState.allows(lever);
 	}
@@ -809,9 +778,8 @@ public class MasteringMixologyPlugin extends Plugin
 	{
 		PotionComponent lever = leverComponent(objectId);
 		if (lever == null)
-		{
 			return;
-		}
+
 		pendingLeverPulls.add(lever);
 		pendingLeverPullsExpireTick = client.getTickCount() + PENDING_LEVER_PULL_TICKS;
 		updateMixGuidance();
@@ -820,32 +788,27 @@ public class MasteringMixologyPlugin extends Plugin
 	private static PotionComponent leverComponent(int objectId)
 	{
 		if (objectId == MOX_LEVER.objectId())
-		{
 			return MOX;
-		}
+
 		if (objectId == AGA_LEVER.objectId())
-		{
 			return AGA;
-		}
+
 		if (objectId == LYE_LEVER.objectId())
-		{
 			return LYE;
-		}
+
 		return null;
 	}
 
 	private boolean isVesselBlocked(int objectId)
 	{
 		if (!config.potionProtection() || objectId != AlchemyObject.MIXING_VESSEL.objectId())
-		{
 			return false;
-		}
+
 		int[] slots = mixerSlots();
 		int vesselReady = client.getVarbitValue(VARBIT_MIXING_VESSEL_POTION);
 		if (!MixGuidance.vesselFull(slots, vesselReady))
-		{
 			return false;
-		}
+
 		return !vesselMixValid(slots, vesselReady);
 	}
 
@@ -858,9 +821,8 @@ public class MasteringMixologyPlugin extends Plugin
 	private boolean isCapBlocked(AlchemyObject station)
 	{
 		if (station != AlchemyObject.RETORT || !config.capConcentrate() || !retortProgressTracker.potionLoaded())
-		{
 			return false;
-		}
+
 		return StationGuard.concentrateCapReached(
 				retortProgressTracker.currentProgress(),
 				retortProgressTracker.clickDelta(),
@@ -870,9 +832,8 @@ public class MasteringMixologyPlugin extends Plugin
 	private boolean isLockBlocked(AlchemyObject station)
 	{
 		if (!isLockEnabled(station))
-		{
 			return false;
-		}
+
 		boolean occupied = stationOccupied(station);
 		return !StationGuard.isStationNeeded(station, occupied, potionOrders, heldItemIds());
 	}
@@ -880,34 +841,28 @@ public class MasteringMixologyPlugin extends Plugin
 	private boolean isLockEnabled(AlchemyObject station)
 	{
 		if (station == AlchemyObject.ALEMBIC)
-		{
 			return config.lockAlembicWhenIdle();
-		}
+
 		if (station == AlchemyObject.AGITATOR)
-		{
 			return config.lockAgitatorWhenIdle();
-		}
+
 		if (station == AlchemyObject.RETORT)
-		{
 			return config.lockRetortWhenIdle();
-		}
+
 		return false;
 	}
 
 	private boolean stationOccupied(AlchemyObject station)
 	{
 		if (station == AlchemyObject.ALEMBIC)
-		{
 			return alembicPotionType != null;
-		}
+
 		if (station == AlchemyObject.AGITATOR)
-		{
 			return agitatorPotionType != null;
-		}
+
 		if (station == AlchemyObject.RETORT)
-		{
 			return retortPotionType != null;
-		}
+
 		return false;
 	}
 
@@ -916,16 +871,14 @@ public class MasteringMixologyPlugin extends Plugin
 		Set<Integer> ids = new HashSet<>();
 		var inventory = client.getItemContainer(InventoryID.INV);
 		if (inventory == null)
-		{
 			return ids;
-		}
+
 		for (var item : inventory.getItems())
 		{
 			if (item.getId() != -1)
-			{
 				ids.add(item.getId());
-			}
 		}
+
 		return ids;
 	}
 
@@ -935,9 +888,8 @@ public class MasteringMixologyPlugin extends Plugin
 		var spotAnimId = event.getGraphicsObject().getId();
 
 		if (!config.highlightQuickActionEvents())
-		{
 			return;
-		}
+
 		if (spotAnimId == SPOT_ANIM_ALEMBIC && alembicPotionType != null)
 		{
 			highlightObject(AlchemyObject.ALEMBIC, config.stationQuickActionHighlightColor());
@@ -966,35 +918,29 @@ public class MasteringMixologyPlugin extends Plugin
 	public void onScriptPostFired(ScriptPostFired event)
 	{
 		var scriptId = event.getScriptId();
-		if (scriptId != PROC_MASTERING_MIXOLOGY_BUILD_POTION_ORDERS && scriptId != PROC_MASTERING_MIXOLOGY_BUILD_REAGENTS)
-		{
+		if (scriptId != PROC_MASTERING_MIXOLOGY_BUILD_POTION_ORDERS
+				&& scriptId != PROC_MASTERING_MIXOLOGY_BUILD_REAGENTS)
 			return;
-		}
+
 		var baseWidget = client.getWidget(COMPONENT_POTION_ORDERS);
 
 		if (baseWidget == null)
-		{
 			return;
-		}
+
 		if (scriptId == PROC_MASTERING_MIXOLOGY_BUILD_POTION_ORDERS)
-		{
 			updatePotionOrdersComponent(baseWidget);
-		}
 		else
-		{
 			appendResins(baseWidget);
-		}
 	}
 
 	private void updatePotionOrdersComponent(Widget baseWidget)
 	{
 		// https://github.com/Joshua-F/cs2-scripts/blob/7cc261be62a40a6390de3e1f770259038660af10/scripts/%5Bproc%2Cscript7063%5D.cs2#L26
-		var children = selectChildren(baseWidget, widget -> widget.getType() == WidgetType.GRAPHIC || widget.getType() == WidgetType.TEXT);
+		var children = selectChildren(baseWidget,
+				widget -> widget.getType() == WidgetType.GRAPHIC || widget.getType() == WidgetType.TEXT);
 
 		if (children.isEmpty())
-		{
 			return;
-		}
 
 		// Compute the meta-policy recommendation once per rebuild (the orders
 		// and the resin state are both stable until the next refresh). null
@@ -1024,23 +970,27 @@ public class MasteringMixologyPlugin extends Plugin
 				LOGGER.debug("Eep Eep! Selected the wrong components!");
 				continue;
 			}
+
 			var builder = new StringBuilder(orderText.getText());
 			boolean skipped = recommendedSlots != null && !order.fulfilled() && !recommendedSlots.contains(order.idx());
-			Color skipColor = config.accessibilityMode() ? config.accessibilitySkipColor() : config.notRecommendedPotionColor();
+			Color skipColor = config.accessibilityMode()
+					? config.accessibilitySkipColor()
+					: config.notRecommendedPotionColor();
 
 			if (order.fulfilled())
-			{
 				builder.append(" (<col=00ff00>done!</col>)");
-			}
 			else
-			{
-				builder.append(" (").append(recipeText(order.potionType(), skipped, skipColor)).append(")");
-			}
+				builder.append(" (")
+						.append(recipeText(order.potionType(), skipped, skipColor))
+						.append(")");
+
 			orderText.setText(builder.toString());
 
 			if (recommendedSlots != null && !order.fulfilled())
 			{
-				Color recommendColor = config.accessibilityMode() ? config.accessibilityRecommendColor() : config.recommendedPotionColor();
+				Color recommendColor = config.accessibilityMode()
+						? config.accessibilityRecommendColor()
+						: config.recommendedPotionColor();
 				orderText.setTextColor((skipped ? skipColor : recommendColor).getRGB());
 			}
 
@@ -1056,6 +1006,7 @@ public class MasteringMixologyPlugin extends Plugin
 				orderText.revalidate();
 			}
 		}
+
 		updateMixGuidance();
 	}
 
@@ -1067,14 +1018,14 @@ public class MasteringMixologyPlugin extends Plugin
 	{
 		boolean blocks = config.accessibilityMode() && resinIconIdx != null;
 		if (!skipped)
-		{
 			return blocks ? potionType.recipeBlocks(resinIconIdx) : potionType.recipe();
-		}
+
 		if (blocks)
 		{
 			int skipIcon = resinIconIdx[SKIP_ICON];
 			return potionType.recipeBlocks(new int[]{skipIcon, skipIcon, skipIcon});
 		}
+
 		return ColorUtil.wrapWithColorTag(potionType.abbreviation(), skipColor);
 	}
 
@@ -1086,26 +1037,22 @@ public class MasteringMixologyPlugin extends Plugin
 	private Set<Integer> computeRecommendedSlots()
 	{
 		if (!config.highlightRecommendedPotions())
-		{
 			return null;
-		}
+
 		if (potionOrders.size() != 3)
-		{
 			return null;
-		}
+
 		// Target = sum of selected reward costs (the Goal already handles
 		// this for the overlay / threshold notification).
 		if (!goal.isMultiMode())
-		{
 			return null;
-		}
+
 		var mox = goal.getComponentData(MOX);
 		var aga = goal.getComponentData(AGA);
 		var lye = goal.getComponentData(LYE);
 		if (mox == null || aga == null || lye == null)
-		{
 			return null;
-		}
+
 		int[] resin = {
 				client.getVarpValue(VARP_MOX_RESIN),
 				client.getVarpValue(VARP_AGA_RESIN),
@@ -1113,17 +1060,15 @@ public class MasteringMixologyPlugin extends Plugin
 		};
 		int[] target = { mox.goalAmount, aga.goalAmount, lye.goalAmount };
 		if (target[0] == 0 && target[1] == 0 && target[2] == 0)
-		{
 			return null;
-		}
+
 		// Build the 3-slot PotionType array in original conveyor order.
 		// potionOrders may be sorted by config.potionOrderSorting() so we
 		// re-index by order.idx().
 		PotionType[] ordersBySlot = new PotionType[3];
 		for (PotionOrder po : potionOrders)
-		{
 			ordersBySlot[po.idx()] = po.potionType();
-		}
+
 		return metaPolicy.decide(ordersBySlot, resin, target);
 	}
 
@@ -1132,9 +1077,8 @@ public class MasteringMixologyPlugin extends Plugin
 		var children = parent.getChildren();
 
 		if (children == null)
-		{
 			return List.of();
-		}
+
 		return Arrays.stream(children)
 				.filter(filter)
 				.collect(Collectors.toUnmodifiableList());
@@ -1143,9 +1087,8 @@ public class MasteringMixologyPlugin extends Plugin
 	private void appendResins(Widget baseWidget)
 	{
 		if (!config.displayResin())
-		{
 			return;
-		}
+
 		var parentWidth = baseWidget.getWidth();
 		var dx = parentWidth / 3;
 		int x = dx / 2;
@@ -1159,9 +1102,7 @@ public class MasteringMixologyPlugin extends Plugin
 	{
 		var ordersLayer = client.getWidget(COMPONENT_POTION_ORDERS_GROUP_ID, 0);
 		if (ordersLayer == null || ordersLayer.isSelfHidden())
-		{
 			return;
-		}
 
 		LOGGER.debug("initialize plugin");
 		inLab = true;
@@ -1176,46 +1117,43 @@ public class MasteringMixologyPlugin extends Plugin
 		var worldView = client.getTopLevelWorldView();
 
 		if (worldView == null)
-		{
 			return;
-		}
+
 		var localPoint = LocalPoint.fromWorld(worldView, alchemyObject.coordinate());
 
 		if (localPoint == null)
-		{
 			return;
-		}
+
 		var tiles = worldView.getScene().getTiles();
 		var tile = tiles[worldView.getPlane()][localPoint.getSceneX()][localPoint.getSceneY()];
 
 		for (var gameObject : tile.getGameObjects())
 		{
 			if (gameObject == null)
-			{
 				continue;
-			}
 
 			if (gameObject.getId() == alchemyObject.objectId())
 			{
-				highlightedObjects.put(alchemyObject, new HighlightedObject(gameObject, color, config.highlightBorderWidth(), config.highlightFeather()));
+				highlightedObjects.put(alchemyObject,
+						new HighlightedObject(gameObject, color, config.highlightBorderWidth(),
+								config.highlightFeather()));
 				return;
 			}
 		}
+
 		// The aga lever is actually a wall decoration, not a scenery object
 		var decorativeObject = tile.getDecorativeObject();
 
 		if (decorativeObject != null && decorativeObject.getId() == alchemyObject.objectId())
-		{
-			highlightedObjects.put(alchemyObject, new HighlightedObject(decorativeObject, color, config.highlightBorderWidth(), config.highlightFeather()));
-		}
+			highlightedObjects.put(alchemyObject,
+					new HighlightedObject(decorativeObject, color, config.highlightBorderWidth(),
+							config.highlightFeather()));
 	}
 
 	public void resetStationHighlight(AlchemyObject alchemyObject)
 	{
 		if (config.highlightStations())
-		{
 			highlightObject(alchemyObject, config.stationHighlightColor());
-		}
 	}
 
 	public void unHighlightObject(AlchemyObject alchemyObject)
@@ -1237,21 +1175,21 @@ public class MasteringMixologyPlugin extends Plugin
 	private void updateMixGuidance()
 	{
 		if (!inLab)
-		{
 			return;
-		}
+
 		int[] slots = mixerSlots();
 		int vesselReady = client.getVarbitValue(VARBIT_MIXING_VESSEL_POTION);
 		if (MixGuidance.vesselEmpty(slots, vesselReady))
-		{
 			vesselCollected = false;
-		}
+
 		if (vesselCollected)
 		{
 			slots = new int[slots.length];
 			vesselReady = 0;
 		}
-		PotionOrder target = MixGuidance.nextOrderToMix(potionOrders, recommendedSlots, potionsOnHand(!vesselCollected));
+
+		PotionOrder target = MixGuidance.nextOrderToMix(potionOrders, recommendedSlots,
+				potionsOnHand(!vesselCollected));
 		PotionType targetType = target == null ? null : target.potionType();
 		highlightLeverState = MixGuidance.leverState(targetType, slots, vesselReady);
 		int[] slotsWithPending = MixGuidance.withPendingPulls(slots, pendingLeverPulls);
@@ -1270,13 +1208,9 @@ public class MasteringMixologyPlugin extends Plugin
 	private void setReadyHighlight(AlchemyObject alchemyObject, boolean highlighted)
 	{
 		if (highlighted)
-		{
 			highlightObject(alchemyObject, READY_HIGHLIGHT_COLOR);
-		}
 		else
-		{
 			unHighlightObject(alchemyObject);
-		}
 	}
 
 	private void updateLeverHighlights()
@@ -1285,26 +1219,20 @@ public class MasteringMixologyPlugin extends Plugin
 		{
 			AlchemyObject lever = leverObject(component);
 			if (shouldHighlightLever(component))
-			{
 				highlightObject(lever, effectiveComponentColor(component));
-			}
 			else
-			{
 				unHighlightObject(lever);
-			}
 		}
 	}
 
 	private boolean shouldHighlightLever(PotionComponent component)
 	{
 		if (!config.highlightLevers())
-		{
 			return false;
-		}
+
 		if (!config.highlightNextLeverOnly() || highlightLeverState.mode() == MixGuidance.LeverMode.FREE)
-		{
 			return true;
-		}
+
 		return highlightLeverState.mode() == MixGuidance.LeverMode.PULL && highlightLeverState.next() == component;
 	}
 
@@ -1343,26 +1271,23 @@ public class MasteringMixologyPlugin extends Plugin
 			{
 				var potionType = PotionType.fromItemId(item.getId());
 				if (potionType != null && potionType.itemId() == item.getId())
-				{
 					counts.merge(potionType, 1, Integer::sum);
-				}
 			}
 		}
+
 		for (PotionType inStation : new PotionType[]{alembicPotionType, agitatorPotionType, retortPotionType})
 		{
 			if (inStation != null)
-			{
 				counts.merge(inStation, 1, Integer::sum);
-			}
 		}
+
 		if (includeVessel)
 		{
 			var inVessel = PotionType.fromIdx(client.getVarbitValue(VARBIT_MIXING_VESSEL_POTION) - 1);
 			if (inVessel != null)
-			{
 				counts.merge(inVessel, 1, Integer::sum);
-			}
 		}
+
 		return counts;
 	}
 
@@ -1370,18 +1295,16 @@ public class MasteringMixologyPlugin extends Plugin
 	{
 		var inventory = client.getItemContainer(InventoryID.INV);
 		if (inventory == null)
-		{
 			return 0;
-		}
+
 		int count = 0;
 		for (var item : inventory.getItems())
 		{
 			var potionType = PotionType.fromItemId(item.getId());
 			if (potionType != null && potionType.itemId() == item.getId())
-			{
 				count++;
-			}
 		}
+
 		return count;
 	}
 
@@ -1393,17 +1316,15 @@ public class MasteringMixologyPlugin extends Plugin
 		Map<PotionType, Integer> counts = new EnumMap<>(PotionType.class);
 		var inventory = client.getItemContainer(InventoryID.INV);
 		if (inventory == null)
-		{
 			return counts;
-		}
+
 		for (var item : inventory.getItems())
 		{
 			var potionType = PotionType.fromItemId(item.getId());
 			if (potionType != null && potionType.modifiedItemId() == item.getId())
-			{
 				counts.merge(potionType, 1, Integer::sum);
-			}
 		}
+
 		return counts;
 	}
 
@@ -1431,9 +1352,7 @@ public class MasteringMixologyPlugin extends Plugin
 		var varbitType = client.getVarbit(VARBIT_POTION_ORDER_1);
 
 		if (varbitType != null)
-		{
 			client.queueChangedVarp(varbitType.getIndex());
-		}
 	}
 
 	private void addResinText(Widget widget, int x, int varp, PotionComponent component)
@@ -1482,34 +1401,26 @@ public class MasteringMixologyPlugin extends Plugin
 	private void refreshStationHighlight()
 	{
 		if (!config.highlightStations() || waitingForFullOrder())
-		{
 			unHighlightAllStations();
-		}
 		else
-		{
 			tryHighlightNextStation();
-		}
 	}
 
 	private void tryHighlightNextStation()
 	{
 		if (!config.highlightStations() || waitingForFullOrder())
-		{
 			return;
-		}
+
 		var inventory = client.getItemContainer(InventoryID.INV);
 
 		if (inventory == null)
-		{
 			return;
-		}
 
 		for (var order : potionOrders)
 		{
 			if (order.fulfilled())
-			{
 				continue;
-			}
+
 			if (inventory.contains(order.potionType().itemId()))
 			{
 				LOGGER.debug("Highlighting station for order {}", order);
@@ -1529,52 +1440,36 @@ public class MasteringMixologyPlugin extends Plugin
 			var potionModifier = getPotionModifier(orderIdx);
 
 			if (potionType == null || potionModifier == null)
-			{
 				continue;
-			}
+
 			potionOrders.add(new PotionOrder(orderIdx, potionType, potionModifier));
 		}
+
 		return potionOrders;
 	}
 
 	private PotionType getPotionType(int orderIdx)
 	{
 		if (orderIdx == 0)
-		{
 			return PotionType.fromIdx(client.getVarbitValue(VARBIT_POTION_ORDER_1) - 1);
-		}
 		else if (orderIdx == 1)
-		{
 			return PotionType.fromIdx(client.getVarbitValue(VARBIT_POTION_ORDER_2) - 1);
-		}
 		else if (orderIdx == 2)
-		{
 			return PotionType.fromIdx(client.getVarbitValue(VARBIT_POTION_ORDER_3) - 1);
-		}
 		else
-		{
 			return null;
-		}
 	}
 
 	private PotionModifier getPotionModifier(int orderIdx)
 	{
 		if (orderIdx == 0)
-		{
 			return PotionModifier.from(client.getVarbitValue(VARBIT_POTION_MODIFIER_1) - 1);
-		}
 		else if (orderIdx == 1)
-		{
 			return PotionModifier.from(client.getVarbitValue(VARBIT_POTION_MODIFIER_2) - 1);
-		}
 		else if (orderIdx == 2)
-		{
 			return PotionModifier.from(client.getVarbitValue(VARBIT_POTION_MODIFIER_3) - 1);
-		}
 		else
-		{
 			return null;
-		}
 	}
 
 	public Goal getGoal()
@@ -1589,7 +1484,6 @@ public class MasteringMixologyPlugin extends Plugin
 
 	public static class HighlightedObject
 	{
-
 		private final TileObject object;
 		private final Color color;
 		private final int outlineWidth;

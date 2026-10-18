@@ -1,9 +1,5 @@
 package work.fking.masteringmixology;
 
-import net.runelite.client.ui.overlay.components.ComponentConstants;
-import net.runelite.client.ui.overlay.components.LayoutableRenderableEntity;
-import net.runelite.client.ui.overlay.components.TextComponent;
-
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
@@ -11,12 +7,15 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
 
+import net.runelite.client.ui.overlay.components.ComponentConstants;
+import net.runelite.client.ui.overlay.components.LayoutableRenderableEntity;
+import net.runelite.client.ui.overlay.components.TextComponent;
+
 // Progress bar with outlined text. Mirrors ProgressBarComponent's interface
 // but renders each label via TextComponent with setOutline(true) so the
 // text stays readable over the coloured bar fill.
 class OutlinedProgressBarComponent implements LayoutableRenderableEntity
 {
-
 	private static final int BAR_HEIGHT = 16;
 	private static final int TEXT_PADDING = 4;
 
@@ -86,14 +85,14 @@ class OutlinedProgressBarComponent implements LayoutableRenderableEntity
 		int textY = y + (height + fm.getAscent()) / 2 - 1;
 
 		if (!leftLabel.isEmpty())
-		{
 			drawOutlined(graphics, leftLabel, x + TEXT_PADDING, textY);
-		}
+
 		if (!centerLabel.isEmpty())
 		{
 			int w = fm.stringWidth(centerLabel);
 			drawOutlined(graphics, centerLabel, x + (width - w) / 2, textY);
 		}
+
 		if (!rightLabel.isEmpty())
 		{
 			int w = fm.stringWidth(rightLabel);
