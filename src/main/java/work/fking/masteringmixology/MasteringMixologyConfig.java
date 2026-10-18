@@ -496,4 +496,55 @@ public interface MasteringMixologyConfig extends Config {
     default Color accessibilityLyeColor() {
         return new Color(0xFF6D00);
     }
+
+    @ConfigSection(
+            name = "Misclick protection",
+            description = "Lock idle stations and cap the Concentrate spam-click",
+            position = 25
+    )
+    String MISCLICK_PROTECTION = "MisclickProtection";
+
+    @ConfigItem(
+            section = MISCLICK_PROTECTION,
+            keyName = "lockAlembicWhenIdle",
+            name = "Lock Alembic when idle",
+            description = "Makes the Alembic unclickable while it is not in use or highlighted",
+            position = 1
+    )
+    default boolean lockAlembicWhenIdle() {
+        return false;
+    }
+
+    @ConfigItem(
+            section = MISCLICK_PROTECTION,
+            keyName = "lockAgitatorWhenIdle",
+            name = "Lock Agitator when idle",
+            description = "Makes the Agitator unclickable while it is not in use or highlighted",
+            position = 2
+    )
+    default boolean lockAgitatorWhenIdle() {
+        return false;
+    }
+
+    @ConfigItem(
+            section = MISCLICK_PROTECTION,
+            keyName = "lockRetortWhenIdle",
+            name = "Lock Retort when idle",
+            description = "Makes the Retort unclickable while it is not in use or highlighted",
+            position = 3
+    )
+    default boolean lockRetortWhenIdle() {
+        return false;
+    }
+
+    @ConfigItem(
+            section = MISCLICK_PROTECTION,
+            keyName = "capConcentrate",
+            name = "Cap Concentrate clicks",
+            description = "Stops Concentrate clicks once one more click would finish the potion; it completes on its own, so spare clicks cannot load the next potion",
+            position = 4
+    )
+    default boolean capConcentrate() {
+        return false;
+    }
 }

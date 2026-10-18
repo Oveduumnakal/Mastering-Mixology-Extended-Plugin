@@ -13,6 +13,7 @@ Fork of [Hexagon's Mastering Mixology plugin](https://github.com/hex-agon/master
 * **Adaptive meta-strategy highlight** — colours each order green (brew) or
   red (skip) according to a state-machine policy proven near-optimal by
   Monte-Carlo simulation (see below)
+* Optional misclick protection: lock idle stations and cap Concentrate spam-clicks
 
 ### The adaptive meta-strategy in one paragraph
 
@@ -80,17 +81,47 @@ a reward updates the colours immediately.
 
 ### Changelog
 
-#### V1.10.0
-* New **Recommended-Potion Highlight** feature — colours each order green
-  (brew it) or red (skip it) according to the adaptive meta-strategy. Off
-  by default; enable from the plugin config. Requires at least one reward
-  selected in *Reward Tracking* to compute against.
-* New **Reward Threshold Notification** section consolidating per-reward
-  toggles plus quantity controls for the four repeatable items; fires a
-  single notification when your resin pool first meets the combined cost
-  of every ticked reward.
-* The overlay's progress bars now sum every ticked reward's cost (rather
-  than showing only the legacy single-reward selection).
+Entries tagged `V<upstream>-extX.Y.Z` are Extended-fork releases; other
+entries are inherited from upstream. `<upstream>` mirrors the upstream
+base; `X` is the fork's major series (currently 1), `Y` bumps on new
+features, `Z` bumps on ext-only fixes. The ext counters reset when
+upstream ships a new version (e.g. upstream `1.9.2` → this fork
+resumes at `1.9.2-ext1.0.0`).
+
+#### V1.9.1-ext1.1.0
+* **Misclick protection** (new config section, all toggles off by
+  default). Contributed by @Mitchole.
+  * *Lock idle stations* — per-station toggles for Alembic, Agitator,
+    and Retort. Consumes the operate click when the station is empty
+    and no unfulfilled order needs it with the potion you're currently
+    holding. Examine and other options are untouched.
+  * *Cap Concentrate clicks* — stops Retort clicks once one more would
+    complete the potion; the bar coasts to completion via passive fill,
+    so spare clicks can't load the next potion. Self-calibrating: adapts
+    to higher Herblore levels that change per-click progress.
+
+#### V1.9.1-ext1.0
+First Extended-fork release; baseline upstream v1.9.1.
+
+**Reward tracking**
+* Multi-select goal — tick any subset of the ten rewards; overlay shows
+  per-resin progress bars and a single notification when the combined
+  cost is met.
+* Quantity fields for every repeatable reward (packs, aldarium,
+  Chugging Barrel).
+
+**Meta-strategy**
+* Recommended-Potion Highlight — colours each order green/red per an
+  adaptive state-machine policy (Monte-Carlo tuned; see above). Off by
+  default; needs at least one reward ticked.
+
+**Accessibility** (new config section)
+* Dyslexic / Colorblind Mode — swaps M/A/L letters for colour blocks in
+  the order list and inventory tags.
+* Configurable recommend/skip text colours (default gold / charcoal).
+* Configurable per-resin colours (defaults `#9D4EDD` / `#00FFB3` /
+  `#FF6D00`) applied to blocks, inventory tags, lever highlights, and
+  progress-bar fills; live re-paint on change.
 
 #### V1.9.1
 * Fixed the `Fix Alembic quick-action sound effect` feature to work with the latest RuneLite version

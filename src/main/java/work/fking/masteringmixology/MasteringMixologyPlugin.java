@@ -4,12 +4,14 @@ import com.google.inject.Provides;
 import net.runelite.api.Client;
 import net.runelite.api.FontID;
 import net.runelite.api.GameState;
+import net.runelite.api.MenuAction;
 import net.runelite.api.Player;
 import net.runelite.api.TileObject;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GraphicsObjectCreated;
 import net.runelite.api.events.ItemContainerChanged;
+import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.events.SoundEffectPlayed;
 import net.runelite.api.events.VarbitChanged;
@@ -40,6 +42,7 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -134,6 +137,8 @@ public class MasteringMixologyPlugin extends Plugin {
 
     private int previousAgitatorProgess;
     private int previousAlembicProgress;
+
+    private final RetortProgressTracker retortProgressTracker = new RetortProgressTracker();
 
     private int agitatorQuickActionTicks = 0;
     private int alembicQuickActionTicks = 0;
@@ -418,9 +423,11 @@ public class MasteringMixologyPlugin extends Plugin {
                 tryHighlightNextStation();
                 LOGGER.debug("Finished concentrating {}", retortPotionType);
                 retortPotionType = null;
+                retortProgressTracker.onPotionCleared();
             } else {
                 retortPotionType = PotionType.fromIdx(value - 1);
                 LOGGER.debug("Retort potion type: {}", retortPotionType);
+                retortProgressTracker.onPotionLoaded();
             }
         } else if (varbitId == VARBIT_DIGWEED_NORTH_EAST) {
             if (value == 1) {
@@ -483,6 +490,8 @@ public class MasteringMixologyPlugin extends Plugin {
                 resetStationHighlight(AlchemyObject.ALEMBIC);
             }
             previousAlembicProgress = value;
+        } else if (varbitId == VarbitID.MM_RETORT_PROGRESS) {
+            retortProgressTracker.onProgressChanged(value);
         } else if (varbitId == VARBIT_AGITATOR_QUICKACTION) {
             // agitator quick action was just successfully popped
             resetStationHighlight(AlchemyObject.AGITATOR);
@@ -518,6 +527,86 @@ public class MasteringMixologyPlugin extends Plugin {
             LOGGER.debug("client found_gem sound effect detected during Alembic, blocking");
             event.consume();
         }
+    }
+
+    @Subscribe
+    public void onMenuOptionClicked(MenuOptionClicked event) {
+        if (!inLab) {
+            return;
+        }
+        MenuAction action = event.getMenuAction();
+        if (action != MenuAction.GAME_OBJECT_FIRST_OPTION
+                && action != MenuAction.GAME_OBJECT_SECOND_OPTION
+                && action != MenuAction.GAME_OBJECT_THIRD_OPTION
+                && action != MenuAction.GAME_OBJECT_FOURTH_OPTION
+                && action != MenuAction.GAME_OBJECT_FIFTH_OPTION) {
+            return;
+        }
+        AlchemyObject station = StationGuard.stationFromTarget(event.getMenuTarget());
+        if (station == null) {
+            return;
+        }
+        if (isCapBlocked(station) || isLockBlocked(station)) {
+            event.consume();
+        }
+    }
+
+    private boolean isCapBlocked(AlchemyObject station) {
+        if (station != AlchemyObject.RETORT || !config.capConcentrate() || !retortProgressTracker.potionLoaded()) {
+            return false;
+        }
+        return StationGuard.concentrateCapReached(
+                retortProgressTracker.currentProgress(),
+                retortProgressTracker.clickDelta(),
+                StationGuard.RETORT_PROGRESS_MAX);
+    }
+
+    private boolean isLockBlocked(AlchemyObject station) {
+        if (!isLockEnabled(station)) {
+            return false;
+        }
+        boolean occupied = stationOccupied(station);
+        return !StationGuard.isStationNeeded(station, occupied, potionOrders, heldItemIds());
+    }
+
+    private boolean isLockEnabled(AlchemyObject station) {
+        if (station == AlchemyObject.ALEMBIC) {
+            return config.lockAlembicWhenIdle();
+        }
+        if (station == AlchemyObject.AGITATOR) {
+            return config.lockAgitatorWhenIdle();
+        }
+        if (station == AlchemyObject.RETORT) {
+            return config.lockRetortWhenIdle();
+        }
+        return false;
+    }
+
+    private boolean stationOccupied(AlchemyObject station) {
+        if (station == AlchemyObject.ALEMBIC) {
+            return alembicPotionType != null;
+        }
+        if (station == AlchemyObject.AGITATOR) {
+            return agitatorPotionType != null;
+        }
+        if (station == AlchemyObject.RETORT) {
+            return retortPotionType != null;
+        }
+        return false;
+    }
+
+    private Set<Integer> heldItemIds() {
+        Set<Integer> ids = new HashSet<>();
+        var inventory = client.getItemContainer(InventoryID.INV);
+        if (inventory == null) {
+            return ids;
+        }
+        for (var item : inventory.getItems()) {
+            if (item.getId() != -1) {
+                ids.add(item.getId());
+            }
+        }
+        return ids;
     }
 
     @Subscribe
