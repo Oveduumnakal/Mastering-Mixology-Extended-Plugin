@@ -9,24 +9,28 @@ import javax.inject.Inject;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 
-public class MasteringMixologyOverlay extends Overlay {
+public class MasteringMixologyOverlay extends Overlay
+{
 
-    private final MasteringMixologyPlugin plugin;
-    private final ModelOutlineRenderer modelOutlineRenderer;
+	private final MasteringMixologyPlugin plugin;
+	private final ModelOutlineRenderer modelOutlineRenderer;
 
-    @Inject
-    MasteringMixologyOverlay(MasteringMixologyPlugin plugin, ModelOutlineRenderer modelOutlineRenderer) {
-        this.plugin = plugin;
-        this.modelOutlineRenderer = modelOutlineRenderer;
-        setPosition(OverlayPosition.DYNAMIC);
-        setLayer(OverlayLayer.ABOVE_SCENE);
-    }
+	@Inject
+	MasteringMixologyOverlay(MasteringMixologyPlugin plugin, ModelOutlineRenderer modelOutlineRenderer)
+	{
+		this.plugin = plugin;
+		this.modelOutlineRenderer = modelOutlineRenderer;
+		setPosition(OverlayPosition.DYNAMIC);
+		setLayer(OverlayLayer.ABOVE_SCENE);
+	}
 
-    @Override
-    public Dimension render(Graphics2D graphics) {
-        for (var highlightedObject : plugin.highlightedObjects().values()) {
-            modelOutlineRenderer.drawOutline(highlightedObject.object(), highlightedObject.outlineWidth(), highlightedObject.color(), highlightedObject.feather());
-        }
-        return null;
-    }
+	@Override
+	public Dimension render(Graphics2D graphics)
+	{
+		for (var highlightedObject : plugin.highlightedObjects().values())
+		{
+			modelOutlineRenderer.drawOutline(highlightedObject.object(), highlightedObject.outlineWidth(), highlightedObject.color(), highlightedObject.feather());
+		}
+		return null;
+	}
 }
