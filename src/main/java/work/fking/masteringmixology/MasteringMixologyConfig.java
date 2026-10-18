@@ -1,5 +1,7 @@
 package work.fking.masteringmixology;
 
+import java.awt.Color;
+
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
@@ -7,14 +9,11 @@ import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Notification;
 import net.runelite.client.config.Range;
 
-import java.awt.Color;
-
 import static work.fking.masteringmixology.MasteringMixologyConfig.CONFIG_GROUP;
 
 @ConfigGroup(CONFIG_GROUP)
 public interface MasteringMixologyConfig extends Config
 {
-
 	String CONFIG_GROUP = "masteringmixology";
 
 	@ConfigSection(
@@ -60,7 +59,8 @@ public interface MasteringMixologyConfig extends Config
 	@ConfigItem(
 			keyName = "highlightNextLeverOnly",
 			name = "Highlight next lever only",
-			description = "Only highlight the next lever to pull for the order you're mixing, instead of all three levers",
+			description = "Only highlight the next lever to pull for the order you're mixing, instead of all three "
+					+ "levers",
 			position = 2
 	)
 	default boolean highlightNextLeverOnly()
@@ -82,7 +82,8 @@ public interface MasteringMixologyConfig extends Config
 	@ConfigItem(
 			keyName = "highlightConveyorBelt",
 			name = "Highlight conveyor belt",
-			description = "Highlight the conveyor belt green when your finished potions match every order you're making",
+			description = "Highlight the conveyor belt green when your finished potions match every order you're "
+					+ "making",
 			position = 2
 	)
 	default boolean highlightConveyorBelt()
@@ -104,7 +105,8 @@ public interface MasteringMixologyConfig extends Config
 	@ConfigItem(
 			keyName = "waitForFullOrder",
 			name = "Wait for full order",
-			description = "Don't highlight any station until every order you're making has been mixed and is in your inventory",
+			description = "Don't highlight any station until every order you're making has been mixed and is in your "
+					+ "inventory",
 			position = 2
 	)
 	default boolean waitForFullOrder()
@@ -224,7 +226,8 @@ public interface MasteringMixologyConfig extends Config
 
 	@ConfigSection(
 			name = "Reward Tracking",
-			description = "Tick the rewards you're working toward. The overlay shows progress toward the combined cost; the notification fires when you meet it.",
+			description = "Tick the rewards you're working toward. The overlay shows progress toward the combined "
+					+ "cost; the notification fires when you meet it.",
 			position = 13
 	)
 	String REWARD_TRACKING = "RewardTracking";
@@ -473,7 +476,8 @@ public interface MasteringMixologyConfig extends Config
 			section = RECOMMENDED_HIGHLIGHT,
 			keyName = "highlightRecommendedPotions",
 			name = "Highlight recommended potions",
-			description = "Colours each order's name green if the adaptive meta-strategy recommends brewing it, red otherwise. Requires at least one tracked reward in Reward Tracking.",
+			description = "Colours each order's name green if the adaptive meta-strategy recommends brewing it, red "
+					+ "otherwise. Requires at least one tracked reward in Reward Tracking.",
 			position = 1
 	)
 	default boolean highlightRecommendedPotions()
@@ -507,7 +511,8 @@ public interface MasteringMixologyConfig extends Config
 
 	@ConfigSection(
 			name = "Accessibility",
-			description = "Dyslexia / colour-blind friendly alternatives: replace M/A/L letters with coloured blocks and swap the recommend/skip text + resin colours for higher-contrast options",
+			description = "Dyslexia / colour-blind friendly alternatives: replace M/A/L letters with coloured blocks "
+					+ "and swap the recommend/skip text + resin colours for higher-contrast options",
 			position = 20
 	)
 	String ACCESSIBILITY = "Accessibility";
@@ -516,7 +521,8 @@ public interface MasteringMixologyConfig extends Config
 			section = ACCESSIBILITY,
 			keyName = "dyslexicMixology",
 			name = "Dyslexic/Colorblind Mode",
-			description = "Replace M/A/L letters with coloured blocks in the order list and inventory tags; apply the accessibility colours below to recommend/skip text, resin blocks, levers, and progress bars",
+			description = "Replace M/A/L letters with coloured blocks in the order list and inventory tags; apply the "
+					+ "accessibility colours below to recommend/skip text, resin blocks, levers, and progress bars",
 			position = 1
 	)
 	default boolean accessibilityMode()
@@ -528,7 +534,8 @@ public interface MasteringMixologyConfig extends Config
 			section = ACCESSIBILITY,
 			keyName = "accessibilityRecommendColor",
 			name = "Recommend colour",
-			description = "Text colour for orders the meta-strategy says you should brew (applied when accessibility mode is on)",
+			description = "Text colour for orders the meta-strategy says you should brew (applied when accessibility "
+					+ "mode is on)",
 			position = 2
 	)
 	default Color accessibilityRecommendColor()
@@ -540,7 +547,8 @@ public interface MasteringMixologyConfig extends Config
 			section = ACCESSIBILITY,
 			keyName = "accessibilitySkipColor",
 			name = "Skip colour",
-			description = "Text colour for orders the meta-strategy says you should skip (applied when accessibility mode is on)",
+			description = "Text colour for orders the meta-strategy says you should skip (applied when accessibility "
+					+ "mode is on)",
 			position = 3
 	)
 	default Color accessibilitySkipColor()
@@ -631,7 +639,8 @@ public interface MasteringMixologyConfig extends Config
 			section = MISCLICK_PROTECTION,
 			keyName = "capConcentrate",
 			name = "Cap Concentrate clicks",
-			description = "Stops Concentrate clicks once one more click would finish the potion; it completes on its own, so spare clicks cannot load the next potion",
+			description = "Stops Concentrate clicks once one more click would finish the potion; it completes on its "
+					+ "own, so spare clicks cannot load the next potion",
 			position = 4
 	)
 	default boolean capConcentrate()
@@ -643,7 +652,8 @@ public interface MasteringMixologyConfig extends Config
 			section = MISCLICK_PROTECTION,
 			keyName = "leverClickProtection",
 			name = "Lever click protection",
-			description = "Only the next lever for the order you're mixing can be pulled. All levers stay pullable if the vessel holds pastes that match no order",
+			description = "Only the next lever for the order you're mixing can be pulled. All levers stay pullable if "
+					+ "the vessel holds pastes that match no order",
 			position = 5
 	)
 	default boolean leverClickProtection()
@@ -655,7 +665,8 @@ public interface MasteringMixologyConfig extends Config
 			section = MISCLICK_PROTECTION,
 			keyName = "potionProtection",
 			name = "Potion protection",
-			description = "Blocks mixing at the vessel when its three pastes don't make a potion for an open order. Turn this off to mix anyway",
+			description = "Blocks mixing at the vessel when its three pastes don't make a potion for an open order. "
+					+ "Turn this off to mix anyway",
 			position = 6
 	)
 	default boolean potionProtection()

@@ -2,7 +2,6 @@ package work.fking.masteringmixology;
 
 class RetortProgressTracker
 {
-
 	// The cap stops one click short of completion: block when
 	// currentProgress + clickDelta >= max. clickDelta is the largest progress
 	// jump seen on a click tick (passive ticks add +1, a click adds +2 at the
@@ -29,14 +28,12 @@ class RetortProgressTracker
 	void onProgressChanged(int value)
 	{
 		if (!potionLoaded)
-		{
 			return;
-		}
+
 		int delta = value - currentProgress;
 		if (delta > clickDelta)
-		{
 			clickDelta = delta;
-		}
+
 		currentProgress = value;
 	}
 

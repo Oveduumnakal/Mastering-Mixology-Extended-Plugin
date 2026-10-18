@@ -23,9 +23,8 @@ public enum PotionModifier
 	public static PotionModifier from(int potionModifierId)
 	{
 		if (potionModifierId < 0 || potionModifierId >= TYPES.length)
-		{
 			return null;
-		}
+
 		return TYPES[potionModifierId];
 	}
 

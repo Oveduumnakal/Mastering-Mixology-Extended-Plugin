@@ -13,7 +13,6 @@ import java.util.Set;
  */
 final class MixGuidance
 {
-
 	/**
 	 * What the levers should do right now.
 	 */
@@ -38,7 +37,6 @@ final class MixGuidance
 	 */
 	static final class LeverState
 	{
-
 		static final LeverState BLOCKED = new LeverState(LeverMode.BLOCKED, null);
 		static final LeverState FREE = new LeverState(LeverMode.FREE, null);
 
@@ -72,9 +70,8 @@ final class MixGuidance
 		boolean allows(PotionComponent component)
 		{
 			if (mode == LeverMode.FREE)
-			{
 				return true;
-			}
+
 			return mode == LeverMode.PULL && next == component;
 		}
 	}
@@ -91,9 +88,8 @@ final class MixGuidance
 	static PotionComponent componentFromSlotValue(int value)
 	{
 		if (value < 1 || value > PotionComponent.ENTRIES.length)
-		{
 			return null;
-		}
+
 		return PotionComponent.ENTRIES[value - 1];
 	}
 
@@ -116,6 +112,7 @@ final class MixGuidance
 				next++;
 			}
 		}
+
 		return slots;
 	}
 
@@ -125,16 +122,14 @@ final class MixGuidance
 	static boolean vesselFull(int[] mixerSlots, int vesselReadyValue)
 	{
 		if (vesselReadyValue != 0)
-		{
 			return true;
-		}
+
 		for (int slot : mixerSlots)
 		{
 			if (slot == 0)
-			{
 				return false;
-			}
 		}
+
 		return true;
 	}
 
@@ -144,16 +139,14 @@ final class MixGuidance
 	static boolean vesselEmpty(int[] mixerSlots, int vesselReadyValue)
 	{
 		if (vesselReadyValue != 0)
-		{
 			return false;
-		}
+
 		for (int slot : mixerSlots)
 		{
 			if (slot != 0)
-			{
 				return false;
-			}
 		}
+
 		return true;
 	}
 
@@ -172,24 +165,26 @@ final class MixGuidance
 	 * @param onHand unfinished potions in the inventory, in a station, or ready in the vessel, by type
 	 * @return the order to mix next, or null if every planned order is covered
 	 */
-	static PotionOrder nextOrderToMix(List<PotionOrder> orders, Set<Integer> recommendedSlots, Map<PotionType, Integer> onHand)
+	static PotionOrder nextOrderToMix(List<PotionOrder> orders, Set<Integer> recommendedSlots,
+			Map<PotionType, Integer> onHand)
 	{
 		Map<PotionType, Integer> remaining = new EnumMap<>(PotionType.class);
 		remaining.putAll(onHand);
 		for (PotionOrder order : orders)
 		{
 			if (order.fulfilled() || !planned(order, recommendedSlots))
-			{
 				continue;
-			}
+
 			int count = remaining.getOrDefault(order.potionType(), 0);
 			if (count > 0)
 			{
 				remaining.put(order.potionType(), count - 1);
 				continue;
 			}
+
 			return order;
 		}
+
 		return null;
 	}
 
@@ -203,26 +198,22 @@ final class MixGuidance
 	static LeverState leverState(PotionType target, int[] mixerSlots, int vesselReadyValue)
 	{
 		if (vesselFull(mixerSlots, vesselReadyValue))
-		{
 			return LeverState.BLOCKED;
-		}
+
 		if (target == null)
-		{
 			return vesselEmpty(mixerSlots, vesselReadyValue) ? LeverState.BLOCKED : LeverState.FREE;
-		}
+
 		List<PotionComponent> needed = new ArrayList<>(List.of(target.components()));
 		for (int slot : mixerSlots)
 		{
 			if (slot == 0)
-			{
 				continue;
-			}
+
 			PotionComponent component = componentFromSlotValue(slot);
 			if (component == null || !needed.remove(component))
-			{
 				return LeverState.FREE;
-			}
 		}
+
 		return LeverState.pull(needed.get(0));
 	}
 
@@ -235,31 +226,28 @@ final class MixGuidance
 	{
 		PotionType ready = PotionType.fromIdx(vesselReadyValue - 1);
 		if (ready != null)
-		{
 			return ready;
-		}
+
 		int[] counts = new int[PotionComponent.ENTRIES.length];
 		for (int slot : mixerSlots)
 		{
 			PotionComponent component = componentFromSlotValue(slot);
 			if (component == null)
-			{
 				return null;
-			}
+
 			counts[component.ordinal()]++;
 		}
+
 		for (PotionType type : PotionType.TYPES)
 		{
 			int[] recipe = new int[PotionComponent.ENTRIES.length];
 			for (PotionComponent component : type.components())
-			{
 				recipe[component.ordinal()]++;
-			}
+
 			if (Arrays.equals(recipe, counts))
-			{
 				return type;
-			}
 		}
+
 		return null;
 	}
 
@@ -271,17 +259,15 @@ final class MixGuidance
 	static boolean mixMatchesOpenOrder(PotionType mix, List<PotionOrder> orders, Map<PotionType, Integer> onHand)
 	{
 		if (mix == null)
-		{
 			return false;
-		}
+
 		int open = 0;
 		for (PotionOrder order : orders)
 		{
 			if (!order.fulfilled() && order.potionType() == mix)
-			{
 				open++;
-			}
 		}
+
 		return open > onHand.getOrDefault(mix, 0);
 	}
 
@@ -290,7 +276,8 @@ final class MixGuidance
 	 *
 	 * @param finishedOnHand finished potions in the inventory, by type
 	 */
-	static boolean readyToDeliver(List<PotionOrder> orders, Set<Integer> recommendedSlots, Map<PotionType, Integer> finishedOnHand)
+	static boolean readyToDeliver(List<PotionOrder> orders, Set<Integer> recommendedSlots,
+			Map<PotionType, Integer> finishedOnHand)
 	{
 		Map<PotionType, Integer> remaining = new EnumMap<>(PotionType.class);
 		remaining.putAll(finishedOnHand);
@@ -298,17 +285,16 @@ final class MixGuidance
 		for (PotionOrder order : orders)
 		{
 			if (!planned(order, recommendedSlots))
-			{
 				continue;
-			}
+
 			anyPlanned = true;
 			int count = remaining.getOrDefault(order.potionType(), 0);
 			if (!order.fulfilled() || count == 0)
-			{
 				return false;
-			}
+
 			remaining.put(order.potionType(), count - 1);
 		}
+
 		return anyPlanned;
 	}
 }

@@ -2,7 +2,6 @@ package work.fking.masteringmixology;
 
 public class PotionOrder
 {
-
 	private final int idx;
 	private final PotionType potionType;
 	private final PotionModifier potionModifier;

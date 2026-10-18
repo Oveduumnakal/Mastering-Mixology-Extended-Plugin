@@ -1,5 +1,14 @@
 package work.fking.masteringmixology;
 
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
+import java.text.DecimalFormat;
+import javax.inject.Inject;
+
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.ui.FontManager;
@@ -13,18 +22,8 @@ import net.runelite.client.ui.overlay.components.SplitComponent;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.QuantityFormatter;
 
-import javax.inject.Inject;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics2D;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.image.BufferedImage;
-import java.text.DecimalFormat;
-
 class GoalInfoBoxOverlay extends OverlayPanel
 {
-
 	private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
 	private static final int BORDER_SIZE = 3;
 	private static final int VERTICAL_GAP = 2;
@@ -77,9 +76,8 @@ class GoalInfoBoxOverlay extends OverlayPanel
 		var rewardItem = goal.getRewardItem();
 
 		if (rewardItem == RewardItem.NONE && !goal.isMultiMode() || !plugin.isInLabRegion())
-		{
 			return null;
-		}
+
 		topPanel.getChildren().clear();
 		graphics.setFont(FontManager.getRunescapeSmallFont());
 
@@ -127,9 +125,7 @@ class GoalInfoBoxOverlay extends OverlayPanel
 		if (config.showResinBars())
 		{
 			for (var component : PotionComponent.ENTRIES)
-			{
 				createProgressBar(goal, component);
-			}
 		}
 
 		return super.render(graphics);
@@ -141,9 +137,8 @@ class GoalInfoBoxOverlay extends OverlayPanel
 		var componentSprite = getComponentSprite(component);
 
 		if (componentSprite == null)
-		{
 			return;
-		}
+
 		var imageComponent = new ImageComponent(componentSprite);
 		var progressBarComponent = new OutlinedProgressBarComponent();
 
@@ -154,9 +149,7 @@ class GoalInfoBoxOverlay extends OverlayPanel
 		progressBarComponent.setRightLabel(QuantityFormatter.quantityToStackSize(data.goalAmount));
 		int remaining = Math.max(data.goalAmount - data.currentAmount, 0);
 		if (remaining > 0)
-		{
 			progressBarComponent.setCenterLabel("(" + QuantityFormatter.quantityToStackSize(remaining) + ")");
-		}
 
 		var progressBarSplit = SplitComponent.builder()
 				.first(imageComponent)
@@ -175,6 +168,7 @@ class GoalInfoBoxOverlay extends OverlayPanel
 			cachedRewardItem = rewardItem;
 			cachedRewardIcon = itemManager.getImage(rewardItem.itemId());
 		}
+
 		return cachedRewardIcon;
 	}
 
@@ -183,9 +177,8 @@ class GoalInfoBoxOverlay extends OverlayPanel
 		var sprite = componentSprites[component.ordinal()];
 
 		if (sprite == null)
-		{
 			sprite = componentSprites[component.ordinal()] = createComponentSprite(component);
-		}
+
 		return sprite;
 	}
 
@@ -198,6 +191,7 @@ class GoalInfoBoxOverlay extends OverlayPanel
 			var resizedImage = ImageUtil.resizeImage(sprite, COMPONENT_SPRITE_SIZE, COMPONENT_SPRITE_SIZE, true);
 			return ImageUtil.resizeCanvas(resizedImage, COMPONENT_SPRITE_SIZE, COMPONENT_SPRITE_SIZE);
 		}
+
 		return null;
 	}
 }

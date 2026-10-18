@@ -1,11 +1,11 @@
 package work.fking.masteringmixology;
 
-import net.runelite.api.Client;
-
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+
+import net.runelite.api.Client;
 
 public class Goal
 {
@@ -80,9 +80,8 @@ public class Goal
 				int currentAmount = client.getVarpValue(component.resinVarpId());
 				int summedCost = 0;
 				for (Selection sel : selected)
-				{
 					summedCost += sel.item.componentCost(component) * sel.quantity;
-				}
+
 				componentDataMap.put(component, new ComponentData(currentAmount, summedCost, 1));
 			}
 		}
@@ -117,9 +116,8 @@ public class Goal
 	private static String formatSingleDisplayName(Selection sel)
 	{
 		if (sel.quantity > 1)
-		{
 			return sel.item.itemName() + " x" + sel.quantity;
-		}
+
 		return sel.item.itemName();
 	}
 
@@ -127,53 +125,41 @@ public class Goal
 	{
 		List<Selection> list = new ArrayList<>();
 		if (config.trackPrescriptionGoggles())
-		{
 			list.add(new Selection(RewardItem.PRESCRIPTION_GOGGLES, 1));
-		}
+
 		if (config.trackAlchemistLabcoat())
-		{
 			list.add(new Selection(RewardItem.ALCHEMIST_LABCOAT, 1));
-		}
+
 		if (config.trackAlchemistPants())
-		{
 			list.add(new Selection(RewardItem.ALCHEMIST_PANTS, 1));
-		}
+
 		if (config.trackAlchemistGloves())
-		{
 			list.add(new Selection(RewardItem.ALCHEMIST_GLOVES, 1));
-		}
+
 		if (config.trackReagentPouch())
-		{
 			list.add(new Selection(RewardItem.REAGENT_POUCH, 1));
-		}
+
 		if (config.trackPotionStorage())
-		{
 			list.add(new Selection(RewardItem.POTION_STORAGE, 1));
-		}
+
 		if (config.trackChuggingBarrel())
-		{
 			list.add(new Selection(RewardItem.CHUGGING_BARREL, config.chuggingBarrelQuantity()));
-		}
+
 		if (config.trackAlchemistsAmulet())
-		{
 			list.add(new Selection(RewardItem.ALCHEMISTS_AMULET, 1));
-		}
+
 		if (config.trackApprenticePack())
-		{
 			list.add(new Selection(RewardItem.APPRENTICE_POTION_PACK, config.apprenticePackQuantity()));
-		}
+
 		if (config.trackAdeptPack())
-		{
 			list.add(new Selection(RewardItem.ADEPT_POTION_PACK, config.adeptPackQuantity()));
-		}
+
 		if (config.trackExpertPack())
-		{
 			list.add(new Selection(RewardItem.EXPERT_POTION_PACK, config.expertPackQuantity()));
-		}
+
 		if (config.trackAldarium())
-		{
 			list.add(new Selection(RewardItem.ALDARIUM, config.aldariumQuantity()));
-		}
+
 		return list;
 	}
 
