@@ -9,6 +9,7 @@ import net.runelite.api.Player;
 import net.runelite.api.TileObject;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.GameTick;
 import net.runelite.api.events.GraphicsObjectCreated;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.MenuOptionClicked;
@@ -96,6 +97,11 @@ public class MasteringMixologyPlugin extends Plugin {
     private static final Color READY_HIGHLIGHT_COLOR = Color.GREEN;
 
     /**
+     * Game ticks a let-through lever pull is counted as in the vessel while waiting for the mixer varbits.
+     */
+    private static final int PENDING_LEVER_PULL_TICKS = 4;
+
+    /**
      * Index into {@link #resinIconIdx} of the block sprite drawn in the skip colour.
      */
     private static final int SKIP_ICON = 3;
@@ -167,13 +173,30 @@ public class MasteringMixologyPlugin extends Plugin {
      */
     private Set<Integer> recommendedSlots = null;
 
+    /**
+     * Lever state used by lever click protection; counts pending lever pulls as already in the vessel.
+     */
     private MixGuidance.LeverState leverState = MixGuidance.LeverState.FREE;
+
+    /**
+     * Lever state used for highlights; follows the confirmed vessel contents, so a pulled lever stays lit
+     * until its paste lands.
+     */
+    private MixGuidance.LeverState highlightLeverState = MixGuidance.LeverState.FREE;
 
     /**
      * True once the mixed potion has reached the inventory but the game has not yet cleared the vessel varbits.
      * While set, the vessel is treated as empty so its highlight and the next lever update without that lag.
      */
     private boolean vesselCollected = false;
+
+    /**
+     * Lever pulls the client has sent that the mixer varbits do not show yet, oldest first. They count as already
+     * in the vessel, so a fast double click cannot add a second paste before the server catches up.
+     */
+    private final List<PotionComponent> pendingLeverPulls = new ArrayList<>();
+
+    private int pendingLeverPullsExpireTick = 0;
 
     private int unfinishedInInventory = 0;
 
@@ -554,15 +577,31 @@ public class MasteringMixologyPlugin extends Plugin {
             checkRewardThresholdNotification();
         }
 
+        if (value != 0 && isMixerSlot(varbitId) && !pendingLeverPulls.isEmpty()) {
+            pendingLeverPulls.remove(0);
+        }
         if (inLab && affectsMixGuidance(varbitId)) {
             updateMixGuidance();
         }
     }
 
-    private static boolean affectsMixGuidance(int varbitId) {
+    @Subscribe
+    public void onGameTick(GameTick event) {
+        if (pendingLeverPulls.isEmpty() || client.getTickCount() < pendingLeverPullsExpireTick) {
+            return;
+        }
+        pendingLeverPulls.clear();
+        updateMixGuidance();
+    }
+
+    private static boolean isMixerSlot(int varbitId) {
         return varbitId == VARBIT_MIXER_SLOT_0
                 || varbitId == VARBIT_MIXER_SLOT_1
-                || varbitId == VARBIT_MIXER_SLOT_2
+                || varbitId == VARBIT_MIXER_SLOT_2;
+    }
+
+    private static boolean affectsMixGuidance(int varbitId) {
+        return isMixerSlot(varbitId)
                 || varbitId == VARBIT_MIXING_VESSEL_POTION
                 || varbitId == VARBIT_ALEMBIC_POTION
                 || varbitId == VARBIT_AGITATOR_POTION
@@ -611,6 +650,7 @@ public class MasteringMixologyPlugin extends Plugin {
             event.consume();
             return;
         }
+        recordLeverPull(event.getId());
         AlchemyObject station = StationGuard.stationFromTarget(event.getMenuTarget());
         if (station == null) {
             return;
@@ -630,6 +670,19 @@ public class MasteringMixologyPlugin extends Plugin {
         }
         updateMixGuidance();
         return !leverState.allows(lever);
+    }
+
+    /**
+     * Counts a let-through lever click as a paste already in the vessel until the mixer varbits confirm it.
+     */
+    private void recordLeverPull(int objectId) {
+        PotionComponent lever = leverComponent(objectId);
+        if (lever == null) {
+            return;
+        }
+        pendingLeverPulls.add(lever);
+        pendingLeverPullsExpireTick = client.getTickCount() + PENDING_LEVER_PULL_TICKS;
+        updateMixGuidance();
     }
 
     private static PotionComponent leverComponent(int objectId) {
@@ -992,7 +1045,10 @@ public class MasteringMixologyPlugin extends Plugin {
             vesselReady = 0;
         }
         PotionOrder target = MixGuidance.nextOrderToMix(potionOrders, recommendedSlots, potionsOnHand(!vesselCollected));
-        leverState = MixGuidance.leverState(target == null ? null : target.potionType(), slots, vesselReady);
+        PotionType targetType = target == null ? null : target.potionType();
+        highlightLeverState = MixGuidance.leverState(targetType, slots, vesselReady);
+        int[] slotsWithPending = MixGuidance.withPendingPulls(slots, pendingLeverPulls);
+        leverState = MixGuidance.leverState(targetType, slotsWithPending, vesselReady);
 
         updateLeverHighlights();
 
@@ -1027,10 +1083,10 @@ public class MasteringMixologyPlugin extends Plugin {
         if (!config.highlightLevers()) {
             return false;
         }
-        if (!config.highlightNextLeverOnly() || leverState.mode() == MixGuidance.LeverMode.FREE) {
+        if (!config.highlightNextLeverOnly() || highlightLeverState.mode() == MixGuidance.LeverMode.FREE) {
             return true;
         }
-        return leverState.mode() == MixGuidance.LeverMode.PULL && leverState.next() == component;
+        return highlightLeverState.mode() == MixGuidance.LeverMode.PULL && highlightLeverState.next() == component;
     }
 
     private static AlchemyObject leverObject(PotionComponent component) {

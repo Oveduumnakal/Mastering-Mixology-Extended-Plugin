@@ -86,6 +86,25 @@ final class MixGuidance {
     }
 
     /**
+     * Fills the vessel's empty slots, in order, with lever pulls the server has not reflected yet, so a quick
+     * second click is judged against the vessel it will actually hit.
+     *
+     * @param pending lever pulls not yet shown in the mixer varbits, oldest first
+     * @return a copy of {@code mixerSlots} with the pending pastes added
+     */
+    static int[] withPendingPulls(int[] mixerSlots, List<PotionComponent> pending) {
+        int[] slots = mixerSlots.clone();
+        int next = 0;
+        for (int i = 0; i < slots.length && next < pending.size(); i++) {
+            if (slots[i] == 0) {
+                slots[i] = pending.get(next).ordinal() + 1;
+                next++;
+            }
+        }
+        return slots;
+    }
+
+    /**
      * @return true when the vessel holds three pastes (or the game flags it ready) and should be mixed
      */
     static boolean vesselFull(int[] mixerSlots, int vesselReadyValue) {

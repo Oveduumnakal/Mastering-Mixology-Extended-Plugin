@@ -85,6 +85,19 @@ public class MixGuidanceTest {
     }
 
     @Test
+    public void pendingPullsFillEmptySlotsAndBlockDoubleClick() {
+        int[] slots = MixGuidance.withPendingPulls(new int[]{A, EMPTY, EMPTY}, List.of(LYE));
+        assertEquals(List.of(A, L, EMPTY), List.of(slots[0], slots[1], slots[2]));
+
+        int[] beforeServer = MixGuidance.withPendingPulls(new int[]{EMPTY, EMPTY, EMPTY}, List.of(MOX));
+        assertFalse(MixGuidance.leverState(MIXALOT, beforeServer, 0).allows(MOX));
+        assertTrue(MixGuidance.leverState(MIXALOT, beforeServer, 0).allows(AGA));
+
+        int[] overflow = MixGuidance.withPendingPulls(new int[]{M, A, EMPTY}, List.of(LYE, LYE));
+        assertEquals(List.of(M, A, L), List.of(overflow[0], overflow[1], overflow[2]));
+    }
+
+    @Test
     public void vesselPotionMatchesPasteMultiset() {
         assertEquals(AQUALUX_AMALGAM, MixGuidance.vesselPotion(new int[]{L, A, A}, 0));
         assertEquals(MIXALOT, MixGuidance.vesselPotion(new int[]{EMPTY, EMPTY, EMPTY}, MIXALOT.ordinal() + 1));
