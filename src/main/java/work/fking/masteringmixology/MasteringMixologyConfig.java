@@ -54,6 +54,36 @@ public interface MasteringMixologyConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "highlightNextLeverOnly",
+            name = "Highlight next lever only",
+            description = "Only highlight the next lever to pull for the order you're mixing, instead of all three levers",
+            position = 2
+    )
+    default boolean highlightNextLeverOnly() {
+        return false;
+    }
+
+    @ConfigItem(
+            keyName = "highlightMixingVessel",
+            name = "Highlight mixing vessel",
+            description = "Highlight the mixing vessel green when it holds three pastes and is ready to mix",
+            position = 2
+    )
+    default boolean highlightMixingVessel() {
+        return true;
+    }
+
+    @ConfigItem(
+            keyName = "highlightConveyorBelt",
+            name = "Highlight conveyor belt",
+            description = "Highlight the conveyor belt green when your finished potions match every order you're making",
+            position = 2
+    )
+    default boolean highlightConveyorBelt() {
+        return true;
+    }
+
+    @ConfigItem(
             keyName = "highlightStations",
             name = "Highlight stations",
             description = "Toggles alchemical station highlighting on or off",
@@ -61,6 +91,16 @@ public interface MasteringMixologyConfig extends Config {
     )
     default boolean highlightStations() {
         return true;
+    }
+
+    @ConfigItem(
+            keyName = "waitForFullOrder",
+            name = "Wait for full order",
+            description = "Don't highlight any station until every order you're making has been mixed and is in your inventory",
+            position = 2
+    )
+    default boolean waitForFullOrder() {
+        return false;
     }
 
     @ConfigItem(
@@ -545,6 +585,28 @@ public interface MasteringMixologyConfig extends Config {
             position = 4
     )
     default boolean capConcentrate() {
+        return false;
+    }
+
+    @ConfigItem(
+            section = MISCLICK_PROTECTION,
+            keyName = "leverClickProtection",
+            name = "Lever click protection",
+            description = "Only the next lever for the order you're mixing can be pulled. All levers stay pullable if the vessel holds pastes that match no order",
+            position = 5
+    )
+    default boolean leverClickProtection() {
+        return false;
+    }
+
+    @ConfigItem(
+            section = MISCLICK_PROTECTION,
+            keyName = "potionProtection",
+            name = "Potion protection",
+            description = "Blocks mixing at the vessel when its three pastes don't make a potion for an open order. Turn this off to mix anyway",
+            position = 6
+    )
+    default boolean potionProtection() {
         return false;
     }
 }

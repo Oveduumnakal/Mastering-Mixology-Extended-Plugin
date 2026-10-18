@@ -9,6 +9,7 @@ import net.runelite.api.Player;
 import net.runelite.api.TileObject;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.GameTick;
 import net.runelite.api.events.GraphicsObjectCreated;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.MenuOptionClicked;
@@ -34,6 +35,7 @@ import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelite.client.util.ColorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +44,7 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -86,6 +89,22 @@ public class MasteringMixologyPlugin extends Plugin {
     private static final int VARBIT_AGITATOR_POTION = VarbitID.MM_LAB_AGITATOR_POTION;
     private static final int VARBIT_RETORT_POTION = VarbitID.MM_LAB_RETORT_POTION;
     private static final int VARBIT_ALEMBIC_POTION = VarbitID.MM_LAB_ALEMBIC_POTION;
+
+    private static final int VARBIT_MIXER_SLOT_0 = VarbitID.MM_LAB_MIXER_SLOT_0;
+    private static final int VARBIT_MIXER_SLOT_1 = VarbitID.MM_LAB_MIXER_SLOT_1;
+    private static final int VARBIT_MIXER_SLOT_2 = VarbitID.MM_LAB_MIXER_SLOT_2;
+
+    private static final Color READY_HIGHLIGHT_COLOR = Color.GREEN;
+
+    /**
+     * Game ticks a let-through lever pull is counted as in the vessel while waiting for the mixer varbits.
+     */
+    private static final int PENDING_LEVER_PULL_TICKS = 4;
+
+    /**
+     * Index into {@link #resinIconIdx} of the block sprite drawn in the skip colour.
+     */
+    private static final int SKIP_ICON = 3;
 
     private static final int VARBIT_DIGWEED_NORTH_EAST = VarbitID.MM_HERB_READY_1;
     private static final int VARBIT_DIGWEED_SOUTH_EAST = VarbitID.MM_HERB_READY_2;
@@ -149,6 +168,38 @@ public class MasteringMixologyPlugin extends Plugin {
 
     private final MetaPolicy metaPolicy = new MetaPolicy();
 
+    /**
+     * Order slots the meta-policy recommended on the last order rebuild; null when recommendations are off.
+     */
+    private Set<Integer> recommendedSlots = null;
+
+    /**
+     * Lever state used by lever click protection; counts pending lever pulls as already in the vessel.
+     */
+    private MixGuidance.LeverState leverState = MixGuidance.LeverState.FREE;
+
+    /**
+     * Lever state used for highlights; follows the confirmed vessel contents, so a pulled lever stays lit
+     * until its paste lands.
+     */
+    private MixGuidance.LeverState highlightLeverState = MixGuidance.LeverState.FREE;
+
+    /**
+     * True once the mixed potion has reached the inventory but the game has not yet cleared the vessel varbits.
+     * While set, the vessel is treated as empty so its highlight and the next lever update without that lag.
+     */
+    private boolean vesselCollected = false;
+
+    /**
+     * Lever pulls the client has sent that the mixer varbits do not show yet, oldest first. They count as already
+     * in the vessel, so a fast double click cannot add a second paste before the server catches up.
+     */
+    private final List<PotionComponent> pendingLeverPulls = new ArrayList<>();
+
+    private int pendingLeverPullsExpireTick = 0;
+
+    private int unfinishedInInventory = 0;
+
     private int[] resinIconIdx = null;
     private net.runelite.api.IndexedSprite[] resinIconSprites = null;
 
@@ -198,43 +249,63 @@ public class MasteringMixologyPlugin extends Plugin {
         if (mod == null) {
             return;
         }
-        final int size = 9;
+        final int count = SKIP_ICON + 1;
         int base = mod.length;
-        net.runelite.api.IndexedSprite[] extended = Arrays.copyOf(mod, base + 3);
-        int[] indices = new int[3];
-        net.runelite.api.IndexedSprite[] sprites = new net.runelite.api.IndexedSprite[3];
-        for (PotionComponent c : PotionComponent.ENTRIES) {
-            net.runelite.api.IndexedSprite s = client.createIndexedSprite();
-            byte[] pixels = new byte[size * size];
-            for (int i = 0; i < pixels.length; i++) {
-                int x = i % size;
-                int y = i / size;
-                boolean edge = x == 0 || x == size - 1 || y == 0 || y == size - 1;
-                pixels[i] = (byte) (edge ? 1 : 2);
-            }
-            s.setPixels(pixels);
-            s.setPalette(new int[]{0, 0x000000, effectiveComponentColor(c).getRGB() & 0xFFFFFF});
-            s.setWidth(size);
-            s.setHeight(size);
-            s.setOriginalWidth(size);
-            s.setOriginalHeight(size);
-            extended[base + c.ordinal()] = s;
-            indices[c.ordinal()] = base + c.ordinal();
-            sprites[c.ordinal()] = s;
+        net.runelite.api.IndexedSprite[] extended = Arrays.copyOf(mod, base + count);
+        int[] indices = new int[count];
+        net.runelite.api.IndexedSprite[] sprites = new net.runelite.api.IndexedSprite[count];
+        for (int i = 0; i < count; i++) {
+            net.runelite.api.IndexedSprite s = createBlockSprite(resinIconColor(i));
+            extended[base + i] = s;
+            indices[i] = base + i;
+            sprites[i] = s;
         }
         client.setModIcons(extended);
         resinIconIdx = indices;
         resinIconSprites = sprites;
     }
 
+    private net.runelite.api.IndexedSprite createBlockSprite(Color color) {
+        final int size = 9;
+        net.runelite.api.IndexedSprite s = client.createIndexedSprite();
+        byte[] pixels = new byte[size * size];
+        for (int i = 0; i < pixels.length; i++) {
+            int x = i % size;
+            int y = i / size;
+            boolean edge = x == 0 || x == size - 1 || y == 0 || y == size - 1;
+            pixels[i] = (byte) (edge ? 1 : 2);
+        }
+        s.setPixels(pixels);
+        s.setPalette(blockPalette(color));
+        s.setWidth(size);
+        s.setHeight(size);
+        s.setOriginalWidth(size);
+        s.setOriginalHeight(size);
+        return s;
+    }
+
+    private static int[] blockPalette(Color color) {
+        return new int[]{0, 0x000000, color.getRGB() & 0xFFFFFF};
+    }
+
+    /**
+     * @param icon a component ordinal, or {@link #SKIP_ICON}
+     */
+    private Color resinIconColor(int icon) {
+        if (icon == SKIP_ICON) {
+            return config.accessibilitySkipColor();
+        }
+        return effectiveComponentColor(PotionComponent.ENTRIES[icon]);
+    }
+
     private void applyResinIconPalettes() {
         if (resinIconSprites == null) {
             return;
         }
-        for (PotionComponent c : PotionComponent.ENTRIES) {
-            net.runelite.api.IndexedSprite s = resinIconSprites[c.ordinal()];
+        for (int i = 0; i < resinIconSprites.length; i++) {
+            net.runelite.api.IndexedSprite s = resinIconSprites[i];
             if (s != null) {
-                s.setPalette(new int[]{0, 0x000000, effectiveComponentColor(c).getRGB() & 0xFFFFFF});
+                s.setPalette(blockPalette(resinIconColor(i)));
             }
         }
     }
@@ -294,12 +365,8 @@ public class MasteringMixologyPlugin extends Plugin {
             clientThread.invokeLater(this::updatePotionOrders);
         }
 
-        if (event.getKey().equals("highlightStations")) {
-            if (!config.highlightStations()) {
-                unHighlightAllStations();
-            } else {
-                clientThread.invokeLater(this::tryHighlightNextStation);
-            }
+        if (event.getKey().equals("highlightStations") || event.getKey().equals("waitForFullOrder")) {
+            clientThread.invokeLater(this::refreshStationHighlight);
         }
 
         if (event.getKey().equals("displayResin")) {
@@ -335,27 +402,34 @@ public class MasteringMixologyPlugin extends Plugin {
         if (event.getKey().equals("dyslexicMixology")
                 || event.getKey().equals("accessibilityMoxColor")
                 || event.getKey().equals("accessibilityAgaColor")
-                || event.getKey().equals("accessibilityLyeColor")) {
+                || event.getKey().equals("accessibilityLyeColor")
+                || event.getKey().equals("accessibilitySkipColor")) {
             clientThread.invokeLater(this::applyResinIconPalettes);
-            if (config.highlightLevers()) {
-                clientThread.invokeLater(this::highlightLevers);
-            }
         }
 
-        if (config.highlightLevers()) {
-            highlightLevers();
-        } else {
-            unHighlightLevers();
-        }
+        clientThread.invokeLater(this::updateMixGuidance);
     }
 
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged event) {
+        if (inLab && event.getContainerId() == InventoryID.INV) {
+            int unfinished = countUnfinishedInInventory();
+            if (unfinished > unfinishedInInventory
+                    && MixGuidance.vesselFull(mixerSlots(), client.getVarbitValue(VARBIT_MIXING_VESSEL_POTION))) {
+                vesselCollected = true;
+            }
+            unfinishedInInventory = unfinished;
+            updateMixGuidance();
+        }
         if (!inLab || !config.highlightStations() || event.getContainerId() != InventoryID.INV) {
             return;
         }
         // Do not update the highlight if there's a potion in a station
         if (alembicPotionType != null || agitatorPotionType != null || retortPotionType != null) {
+            return;
+        }
+        if (waitingForFullOrder()) {
+            unHighlightAllStations();
             return;
         }
         var inventory = event.getItemContainer();
@@ -502,6 +576,36 @@ public class MasteringMixologyPlugin extends Plugin {
             recalculateGoalData();
             checkRewardThresholdNotification();
         }
+
+        if (value != 0 && isMixerSlot(varbitId) && !pendingLeverPulls.isEmpty()) {
+            pendingLeverPulls.remove(0);
+        }
+        if (inLab && affectsMixGuidance(varbitId)) {
+            updateMixGuidance();
+        }
+    }
+
+    @Subscribe
+    public void onGameTick(GameTick event) {
+        if (pendingLeverPulls.isEmpty() || client.getTickCount() < pendingLeverPullsExpireTick) {
+            return;
+        }
+        pendingLeverPulls.clear();
+        updateMixGuidance();
+    }
+
+    private static boolean isMixerSlot(int varbitId) {
+        return varbitId == VARBIT_MIXER_SLOT_0
+                || varbitId == VARBIT_MIXER_SLOT_1
+                || varbitId == VARBIT_MIXER_SLOT_2;
+    }
+
+    private static boolean affectsMixGuidance(int varbitId) {
+        return isMixerSlot(varbitId)
+                || varbitId == VARBIT_MIXING_VESSEL_POTION
+                || varbitId == VARBIT_ALEMBIC_POTION
+                || varbitId == VARBIT_AGITATOR_POTION
+                || varbitId == VARBIT_RETORT_POTION;
     }
 
     private void checkRewardThresholdNotification() {
@@ -542,6 +646,11 @@ public class MasteringMixologyPlugin extends Plugin {
                 && action != MenuAction.GAME_OBJECT_FIFTH_OPTION) {
             return;
         }
+        if (isLeverBlocked(event.getId()) || isVesselBlocked(event.getId())) {
+            event.consume();
+            return;
+        }
+        recordLeverPull(event.getId());
         AlchemyObject station = StationGuard.stationFromTarget(event.getMenuTarget());
         if (station == null) {
             return;
@@ -549,6 +658,61 @@ public class MasteringMixologyPlugin extends Plugin {
         if (isCapBlocked(station) || isLockBlocked(station)) {
             event.consume();
         }
+    }
+
+    private boolean isLeverBlocked(int objectId) {
+        if (!config.leverClickProtection()) {
+            return false;
+        }
+        PotionComponent lever = leverComponent(objectId);
+        if (lever == null) {
+            return false;
+        }
+        updateMixGuidance();
+        return !leverState.allows(lever);
+    }
+
+    /**
+     * Counts a let-through lever click as a paste already in the vessel until the mixer varbits confirm it.
+     */
+    private void recordLeverPull(int objectId) {
+        PotionComponent lever = leverComponent(objectId);
+        if (lever == null) {
+            return;
+        }
+        pendingLeverPulls.add(lever);
+        pendingLeverPullsExpireTick = client.getTickCount() + PENDING_LEVER_PULL_TICKS;
+        updateMixGuidance();
+    }
+
+    private static PotionComponent leverComponent(int objectId) {
+        if (objectId == MOX_LEVER.objectId()) {
+            return MOX;
+        }
+        if (objectId == AGA_LEVER.objectId()) {
+            return AGA;
+        }
+        if (objectId == LYE_LEVER.objectId()) {
+            return LYE;
+        }
+        return null;
+    }
+
+    private boolean isVesselBlocked(int objectId) {
+        if (!config.potionProtection() || objectId != AlchemyObject.MIXING_VESSEL.objectId()) {
+            return false;
+        }
+        int[] slots = mixerSlots();
+        int vesselReady = client.getVarbitValue(VARBIT_MIXING_VESSEL_POTION);
+        if (!MixGuidance.vesselFull(slots, vesselReady)) {
+            return false;
+        }
+        return !vesselMixValid(slots, vesselReady);
+    }
+
+    private boolean vesselMixValid(int[] slots, int vesselReady) {
+        PotionType mix = MixGuidance.vesselPotion(slots, vesselReady);
+        return MixGuidance.mixMatchesOpenOrder(mix, potionOrders, potionsOnHand(false));
     }
 
     private boolean isCapBlocked(AlchemyObject station) {
@@ -667,7 +831,7 @@ public class MasteringMixologyPlugin extends Plugin {
         // and the resin state are both stable until the next refresh). null
         // means "highlighting disabled" -- e.g. toggle off or no rewards
         // tracked yet.
-        Set<Integer> recommendedSlots = computeRecommendedSlots();
+        recommendedSlots = computeRecommendedSlots();
 
         /*
          * Filtered children layout:
@@ -690,26 +854,19 @@ public class MasteringMixologyPlugin extends Plugin {
                 continue;
             }
             var builder = new StringBuilder(orderText.getText());
+            boolean skipped = recommendedSlots != null && !order.fulfilled() && !recommendedSlots.contains(order.idx());
+            Color skipColor = config.accessibilityMode() ? config.accessibilitySkipColor() : config.notRecommendedPotionColor();
 
             if (order.fulfilled()) {
                 builder.append(" (<col=00ff00>done!</col>)");
             } else {
-                String recipe = (config.accessibilityMode() && resinIconIdx != null)
-                        ? order.potionType().recipeBlocks(resinIconIdx)
-                        : order.potionType().recipe();
-                builder.append(" (").append(recipe).append(")");
+                builder.append(" (").append(recipeText(order.potionType(), skipped, skipColor)).append(")");
             }
             orderText.setText(builder.toString());
 
             if (recommendedSlots != null && !order.fulfilled()) {
-                boolean recommended = recommendedSlots.contains(order.idx());
-                Color tint;
-                if (config.accessibilityMode()) {
-                    tint = recommended ? config.accessibilityRecommendColor() : config.accessibilitySkipColor();
-                } else {
-                    tint = recommended ? config.recommendedPotionColor() : config.notRecommendedPotionColor();
-                }
-                orderText.setTextColor(tint.getRGB());
+                Color recommendColor = config.accessibilityMode() ? config.accessibilityRecommendColor() : config.recommendedPotionColor();
+                orderText.setTextColor((skipped ? skipColor : recommendColor).getRGB());
             }
 
             if (i != order.idx()) {
@@ -723,6 +880,23 @@ public class MasteringMixologyPlugin extends Plugin {
                 orderText.revalidate();
             }
         }
+        updateMixGuidance();
+    }
+
+    /**
+     * Builds the recipe shown after an order's name: coloured letters, or blocks in accessibility mode.
+     * A skipped order draws every letter or block in the skip colour.
+     */
+    private String recipeText(PotionType potionType, boolean skipped, Color skipColor) {
+        boolean blocks = config.accessibilityMode() && resinIconIdx != null;
+        if (!skipped) {
+            return blocks ? potionType.recipeBlocks(resinIconIdx) : potionType.recipe();
+        }
+        if (blocks) {
+            int skipIcon = resinIconIdx[SKIP_ICON];
+            return potionType.recipeBlocks(new int[]{skipIcon, skipIcon, skipIcon});
+        }
+        return ColorUtil.wrapWithColorTag(potionType.abbreviation(), skipColor);
     }
 
     /**
@@ -799,8 +973,9 @@ public class MasteringMixologyPlugin extends Plugin {
 
         LOGGER.debug("initialize plugin");
         inLab = true;
+        unfinishedInInventory = countUnfinishedInInventory();
         updatePotionOrders();
-        highlightLevers();
+        updateMixGuidance();
         tryHighlightNextStation();
     }
 
@@ -852,20 +1027,146 @@ public class MasteringMixologyPlugin extends Plugin {
         unHighlightObject(AlchemyObject.AGITATOR);
     }
 
-    private void highlightLevers() {
-        if (!config.highlightLevers()) {
+    /**
+     * Recomputes the lever state from the orders, vessel and inventory, then refreshes the lever,
+     * mixing vessel and conveyor belt highlights.
+     */
+    private void updateMixGuidance() {
+        if (!inLab) {
             return;
         }
+        int[] slots = mixerSlots();
+        int vesselReady = client.getVarbitValue(VARBIT_MIXING_VESSEL_POTION);
+        if (MixGuidance.vesselEmpty(slots, vesselReady)) {
+            vesselCollected = false;
+        }
+        if (vesselCollected) {
+            slots = new int[slots.length];
+            vesselReady = 0;
+        }
+        PotionOrder target = MixGuidance.nextOrderToMix(potionOrders, recommendedSlots, potionsOnHand(!vesselCollected));
+        PotionType targetType = target == null ? null : target.potionType();
+        highlightLeverState = MixGuidance.leverState(targetType, slots, vesselReady);
+        int[] slotsWithPending = MixGuidance.withPendingPulls(slots, pendingLeverPulls);
+        leverState = MixGuidance.leverState(targetType, slotsWithPending, vesselReady);
 
-        highlightObject(LYE_LEVER, effectiveComponentColor(LYE));
-        highlightObject(AGA_LEVER, effectiveComponentColor(AGA));
-        highlightObject(MOX_LEVER, effectiveComponentColor(MOX));
+        updateLeverHighlights();
+
+        boolean vesselReadyToMix = MixGuidance.vesselFull(slots, vesselReady)
+                && (!config.potionProtection() || vesselMixValid(slots, vesselReady));
+        setReadyHighlight(AlchemyObject.MIXING_VESSEL, config.highlightMixingVessel() && vesselReadyToMix);
+
+        boolean deliverable = MixGuidance.readyToDeliver(potionOrders, recommendedSlots, finishedPotionsOnHand());
+        setReadyHighlight(AlchemyObject.CONVEYOR_BELT, config.highlightConveyorBelt() && deliverable);
     }
 
-    private void unHighlightLevers() {
-        unHighlightObject(LYE_LEVER);
-        unHighlightObject(AGA_LEVER);
-        unHighlightObject(MOX_LEVER);
+    private void setReadyHighlight(AlchemyObject alchemyObject, boolean highlighted) {
+        if (highlighted) {
+            highlightObject(alchemyObject, READY_HIGHLIGHT_COLOR);
+        } else {
+            unHighlightObject(alchemyObject);
+        }
+    }
+
+    private void updateLeverHighlights() {
+        for (PotionComponent component : PotionComponent.ENTRIES) {
+            AlchemyObject lever = leverObject(component);
+            if (shouldHighlightLever(component)) {
+                highlightObject(lever, effectiveComponentColor(component));
+            } else {
+                unHighlightObject(lever);
+            }
+        }
+    }
+
+    private boolean shouldHighlightLever(PotionComponent component) {
+        if (!config.highlightLevers()) {
+            return false;
+        }
+        if (!config.highlightNextLeverOnly() || highlightLeverState.mode() == MixGuidance.LeverMode.FREE) {
+            return true;
+        }
+        return highlightLeverState.mode() == MixGuidance.LeverMode.PULL && highlightLeverState.next() == component;
+    }
+
+    private static AlchemyObject leverObject(PotionComponent component) {
+        switch (component) {
+            case MOX:
+                return MOX_LEVER;
+            case AGA:
+                return AGA_LEVER;
+            default:
+                return LYE_LEVER;
+        }
+    }
+
+    private int[] mixerSlots() {
+        return new int[]{
+                client.getVarbitValue(VARBIT_MIXER_SLOT_0),
+                client.getVarbitValue(VARBIT_MIXER_SLOT_1),
+                client.getVarbitValue(VARBIT_MIXER_SLOT_2)
+        };
+    }
+
+    /**
+     * Counts unfinished potions by type: in the inventory, loaded in a station, and (optionally) mixed in the vessel.
+     */
+    private Map<PotionType, Integer> potionsOnHand(boolean includeVessel) {
+        Map<PotionType, Integer> counts = new EnumMap<>(PotionType.class);
+        var inventory = client.getItemContainer(InventoryID.INV);
+        if (inventory != null) {
+            for (var item : inventory.getItems()) {
+                var potionType = PotionType.fromItemId(item.getId());
+                if (potionType != null && potionType.itemId() == item.getId()) {
+                    counts.merge(potionType, 1, Integer::sum);
+                }
+            }
+        }
+        for (PotionType inStation : new PotionType[]{alembicPotionType, agitatorPotionType, retortPotionType}) {
+            if (inStation != null) {
+                counts.merge(inStation, 1, Integer::sum);
+            }
+        }
+        if (includeVessel) {
+            var inVessel = PotionType.fromIdx(client.getVarbitValue(VARBIT_MIXING_VESSEL_POTION) - 1);
+            if (inVessel != null) {
+                counts.merge(inVessel, 1, Integer::sum);
+            }
+        }
+        return counts;
+    }
+
+    private int countUnfinishedInInventory() {
+        var inventory = client.getItemContainer(InventoryID.INV);
+        if (inventory == null) {
+            return 0;
+        }
+        int count = 0;
+        for (var item : inventory.getItems()) {
+            var potionType = PotionType.fromItemId(item.getId());
+            if (potionType != null && potionType.itemId() == item.getId()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Counts finished (station-processed) potions in the inventory by type.
+     */
+    private Map<PotionType, Integer> finishedPotionsOnHand() {
+        Map<PotionType, Integer> counts = new EnumMap<>(PotionType.class);
+        var inventory = client.getItemContainer(InventoryID.INV);
+        if (inventory == null) {
+            return counts;
+        }
+        for (var item : inventory.getItems()) {
+            var potionType = PotionType.fromItemId(item.getId());
+            if (potionType != null && potionType.modifiedItemId() == item.getId()) {
+                counts.merge(potionType, 1, Integer::sum);
+            }
+        }
+        return counts;
     }
 
     private void updatePotionOrders() {
@@ -880,6 +1181,7 @@ public class MasteringMixologyPlugin extends Plugin {
             LOGGER.debug("Sorted orders: {}", potionOrders);
         }
 
+        updateMixGuidance();
         triggerPotionOrderUpdate();
     }
 
@@ -922,8 +1224,24 @@ public class MasteringMixologyPlugin extends Plugin {
         }
     }
 
+    /**
+     * True when "Wait for full order" is on and a planned order still has no potion in the inventory or a station.
+     */
+    private boolean waitingForFullOrder() {
+        return config.waitForFullOrder()
+                && MixGuidance.nextOrderToMix(potionOrders, recommendedSlots, potionsOnHand(false)) != null;
+    }
+
+    private void refreshStationHighlight() {
+        if (!config.highlightStations() || waitingForFullOrder()) {
+            unHighlightAllStations();
+        } else {
+            tryHighlightNextStation();
+        }
+    }
+
     private void tryHighlightNextStation() {
-        if (!config.highlightStations()) {
+        if (!config.highlightStations() || waitingForFullOrder()) {
             return;
         }
         var inventory = client.getItemContainer(InventoryID.INV);
