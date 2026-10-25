@@ -38,10 +38,23 @@ public interface MasteringMixologyConfig extends Config
 
 	@ConfigItem(
 			section = COLORS,
+			keyName = "colorblindMode",
+			name = "Colorblind mode",
+			description = "Preset Mox, Aga and Lye colours that stay distinct for the chosen colour blindness. "
+					+ "Off uses the Mox, Aga and Lye colours below",
+			position = 2
+	)
+	default ColorblindMode colorblindMode()
+	{
+		return ColorblindMode.OFF;
+	}
+
+	@ConfigItem(
+			section = COLORS,
 			keyName = "stationHighlightColor",
 			name = "Station color",
 			description = "Configures the default station highlight color",
-			position = 2
+			position = 3
 	)
 	default Color stationHighlightColor()
 	{
@@ -53,7 +66,7 @@ public interface MasteringMixologyConfig extends Config
 			keyName = "stationQuickActionHighlightColor",
 			name = "Quick-action color",
 			description = "Configures the station quick-action highlight color",
-			position = 3
+			position = 4
 	)
 	default Color stationQuickActionHighlightColor()
 	{
@@ -65,7 +78,7 @@ public interface MasteringMixologyConfig extends Config
 			keyName = "digweedHighlightColor",
 			name = "DigWeed color",
 			description = "Configures the digweed highlight color",
-			position = 4
+			position = 5
 	)
 	default Color digweedHighlightColor()
 	{
@@ -77,7 +90,7 @@ public interface MasteringMixologyConfig extends Config
 			keyName = "accessibilitySkipColor",
 			name = "Skip color",
 			description = "Colour for orders the strategy says you should skip (reroll)",
-			position = 5
+			position = 6
 	)
 	default Color skipColor()
 	{
@@ -88,8 +101,8 @@ public interface MasteringMixologyConfig extends Config
 			section = COLORS,
 			keyName = "accessibilityMoxColor",
 			name = "Mox color",
-			description = "Colour for Mox (recipe, potion names, lever, progress bar)",
-			position = 6
+			description = "Colour for Mox (recipe, potion names, lever, progress bar) while Colorblind mode is Off",
+			position = 7
 	)
 	default Color moxColor()
 	{
@@ -100,8 +113,8 @@ public interface MasteringMixologyConfig extends Config
 			section = COLORS,
 			keyName = "accessibilityAgaColor",
 			name = "Aga color",
-			description = "Colour for Aga (recipe, potion names, lever, progress bar)",
-			position = 7
+			description = "Colour for Aga (recipe, potion names, lever, progress bar) while Colorblind mode is Off",
+			position = 8
 	)
 	default Color agaColor()
 	{
@@ -112,8 +125,8 @@ public interface MasteringMixologyConfig extends Config
 			section = COLORS,
 			keyName = "accessibilityLyeColor",
 			name = "Lye color",
-			description = "Colour for Lye (recipe, potion names, lever, progress bar)",
-			position = 8
+			description = "Colour for Lye (recipe, potion names, lever, progress bar) while Colorblind mode is Off",
+			position = 9
 	)
 	default Color lyeColor()
 	{

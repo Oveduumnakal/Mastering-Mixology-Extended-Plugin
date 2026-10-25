@@ -374,9 +374,13 @@ public class MasteringMixologyPlugin extends Plugin
 		}
 	}
 
-	/** Returns the colour chosen in the Colors section for a paste. */
+	/** Returns the colour chosen in the Colors section for a paste: the colorblind preset, or the custom colour. */
 	Color effectiveComponentColor(PotionComponent c)
 	{
+		Color preset = config.colorblindMode().color(c);
+		if (preset != null)
+			return preset;
+
 		switch (c)
 		{
 			case MOX: return config.moxColor();
@@ -473,6 +477,7 @@ public class MasteringMixologyPlugin extends Plugin
 
 		if (event.getKey().equals("recommendationStrategy")
 				|| event.getKey().equals("useLetters")
+				|| event.getKey().equals("colorblindMode")
 				|| event.getKey().equals("accessibilityMoxColor")
 				|| event.getKey().equals("accessibilityAgaColor")
 				|| event.getKey().equals("accessibilityLyeColor")
@@ -483,6 +488,7 @@ public class MasteringMixologyPlugin extends Plugin
 		}
 
 		if (event.getKey().equals("useLetters")
+				|| event.getKey().equals("colorblindMode")
 				|| event.getKey().equals("accessibilityMoxColor")
 				|| event.getKey().equals("accessibilityAgaColor")
 				|| event.getKey().equals("accessibilityLyeColor")

@@ -87,6 +87,11 @@ All of these are off by default.
   Pick the Mox, Aga and Lye colours (used for recipes, potion names, levers and progress bars), the skip colour, and
   the station, quick-action and digweed highlight colours, all in one section.
 
+- **Colorblind mode**
+
+  Pick Protanopia, Deuteranopia or Tritanopia for preset Mox, Aga and Lye colours that stay distinct with that colour
+  blindness. Off (the default) uses your own colours.
+
 ## Credits
 
 - [Hexagon](https://github.com/hex-agon) wrote the original Mastering Mixology plugin.

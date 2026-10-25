@@ -14,6 +14,8 @@ Extended-fork releases; the other entries are inherited from upstream.
     *Dyslexic/Colorblind Mode*.
   * The paste colours apply everywhere, with new defaults: Mox `#3984FF`, Aga `#6BFF76`, Lye `#FF0000`; skip `#4A4A4A`.
   * Order names in the game's order list are coloured by paste, like the orders overlay.
+  * *Colorblind mode* (Off, Protanopia, Deuteranopia, Tritanopia): preset paste colours chosen by simulating each
+    colour blindness.
 * **Recommendations are always on** once a reward is tracked; pick *Greedy* to skip nothing. The Recommended-Potion
   Highlight section and the recommend colours are removed.
 * **Hide orders panel** option: replaces the game's potion orders list with a plugin overlay.
