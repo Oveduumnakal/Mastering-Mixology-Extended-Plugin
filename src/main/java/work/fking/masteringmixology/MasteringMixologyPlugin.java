@@ -553,11 +553,12 @@ public class MasteringMixologyPlugin extends Plugin
 	 * Reacts to the lab's varbits and varps.
 	 *
 	 * <p>Delivering a potion resets every order varbit to 0 before setting the new values, so the first order varbit
-	 * dropping to 0 clears all the stations. A station's potion varbit returning to 0 means that station has finished:
-	 * its highlight is removed and the matching order is fulfilled. A progress varbit that drops means a quick action
-	 * failed and a quick-action varbit means one was just popped, so both reset that station's highlight. The
-	 * Agitator's quick action has a window of two ticks and the Alembic's of one, and the highlight is also reset
-	 * once that window has passed. Resin varps recalculate the goal.
+	 * dropping to 0 clears all the stations and the order list; the new orders then start with nothing done. A
+	 * station's potion varbit returning to 0 means that station has finished: its highlight is removed and the
+	 * matching order is fulfilled. A progress varbit that drops means a quick action failed and a quick-action varbit
+	 * means one was just popped, so both reset that station's highlight. The Agitator's quick action has a window of
+	 * two ticks and the Alembic's of one, and the highlight is also reset once that window has passed. Resin varps
+	 * recalculate the goal.
 	 */
 	@Subscribe
 	public void onVarbitChanged(VarbitChanged event)
@@ -569,9 +570,14 @@ public class MasteringMixologyPlugin extends Plugin
 		if (varbitId == VARBIT_POTION_ORDER_1)
 		{
 			if (value == 0)
+			{
 				unHighlightAllStations();
+				potionOrders = Collections.emptyList();
+			}
 			else
+			{
 				clientThread.invokeAtTickEnd(this::updatePotionOrders);
+			}
 		}
 		else if (varbitId == VARBIT_ALEMBIC_POTION)
 		{
@@ -1420,7 +1426,9 @@ public class MasteringMixologyPlugin extends Plugin
 	private void updatePotionOrders()
 	{
 		LOGGER.debug("Updating potion orders");
+		var previousOrders = potionOrders;
 		potionOrders = getPotionOrders();
+		PotionOrder.keepFulfilled(previousOrders, potionOrders);
 
 		var potionOrderSorting = config.potionOrderSorting();
 
