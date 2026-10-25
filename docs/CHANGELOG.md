@@ -8,6 +8,8 @@ Extended-fork releases; the other entries are inherited from upstream.
   skip: *Expected value* (new, default), *Bottleneck*, *Adaptive* (the previous policy) or *Greedy* (brew all 3).
   Expected value needs about 4 % fewer potions than the previous policy for the Reagent Pouch in simulation. See
   [STRATEGY.md](STRATEGY.md).
+* **Cap Concentrate clicks** now blocks only on the last tick before the Retort finishes. It used to block once a
+  click would finish the potion, which cut off clicks that still saved a tick.
 * **Hide orders panel** option: replaces the game's potion orders list with a plugin overlay.
 * **Mixing guidance** (new, all toggles in the Highlights and Misclick protection sections). Walks you through the
   mixing half of the loop: levers, then vessel, then stations, then conveyor.
@@ -26,10 +28,9 @@ Extended-fork releases; the other entries are inherited from upstream.
     and Retort. Consumes the operate click when the station is empty
     and no unfulfilled order needs it with the potion you're currently
     holding. Examine and other options are untouched.
-  * *Cap Concentrate clicks* — stops Retort clicks once one more would
-    complete the potion; the bar coasts to completion via passive fill,
-    so spare clicks can't load the next potion. Self-calibrating: adapts
-    to higher Herblore levels that change per-click progress.
+  * *Cap Concentrate clicks* — stops Retort clicks on the last tick,
+    when passive fill completes the potion anyway, so spare clicks can't
+    load the next potion.
 
 ## V1.9.1-ext1.0
 First Extended-fork release; baseline upstream v1.9.1.

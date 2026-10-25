@@ -57,11 +57,11 @@ final class StationGuard
 	}
 
 	/**
-	 * Whether one more click would reach or exceed the maximum. The bar then coasts the last step or steps to
-	 * completion on passive fill, so the click can be blocked.
+	 * Whether passive fill alone completes the potion on the next tick. A click then finishes no sooner, so it can
+	 * be blocked. Earlier clicks still save at least one tick, whatever the per-click progress.
 	 */
-	static boolean concentrateCapReached(int currentProgress, int clickDelta, int maxProgress)
+	static boolean concentrateCapReached(int currentProgress, int maxProgress)
 	{
-		return currentProgress + clickDelta >= maxProgress;
+		return currentProgress >= maxProgress - 1;
 	}
 }
