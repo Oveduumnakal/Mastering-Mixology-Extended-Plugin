@@ -57,6 +57,15 @@ final class StationGuard
 	}
 
 	/**
+	 * Whether a click on a running Agitator or Alembic is consumed: the lock is on, the station is processing a
+	 * potion, and its quick action is not up.
+	 */
+	static boolean runningLockBlocks(boolean lockEnabled, boolean running, boolean quickActionUp)
+	{
+		return lockEnabled && running && !quickActionUp;
+	}
+
+	/**
 	 * Whether one more click would reach or exceed the maximum. The bar then coasts the last step or steps to
 	 * completion on passive fill, so the click can be blocked.
 	 */

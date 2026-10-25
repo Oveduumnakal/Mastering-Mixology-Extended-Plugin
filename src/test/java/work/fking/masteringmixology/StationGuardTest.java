@@ -87,6 +87,15 @@ public class StationGuardTest
 		assertTrue(StationGuard.concentrateCapReached(13, 3, 16));
 	}
 
+	@Test
+	public void runningLockBlocksOnlyWhileRunningWithoutQuickAction()
+	{
+		assertTrue(StationGuard.runningLockBlocks(true, true, false));
+		assertFalse(StationGuard.runningLockBlocks(true, true, true));
+		assertFalse(StationGuard.runningLockBlocks(true, false, false));
+		assertFalse(StationGuard.runningLockBlocks(false, true, false));
+	}
+
 	/** Any potion type works, because the modifier (concentrated) drives the station. */
 	private static PotionType firstConcentrateType()
 	{
