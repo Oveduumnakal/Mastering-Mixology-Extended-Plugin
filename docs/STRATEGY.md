@@ -1,6 +1,6 @@
 # Recommendation strategies
 
-Once you track a reward, each order is marked brew or skip; skipped orders are drawn in the skip colour.
+The "Highlight recommended potions" option colours each order green (brew) or red (skip).
 Delivering any potion refreshes all three orders, so skipping an order means brewing only the green ones.
 The **Strategy** setting picks the rule set:
 
