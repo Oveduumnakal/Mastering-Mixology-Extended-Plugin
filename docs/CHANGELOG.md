@@ -4,6 +4,11 @@ Releases from 2.0 on use their own version numbers, `Release X.Y`. Earlier entri
 Extended-fork releases; the other entries are inherited from upstream.
 
 ## 2.0
+* **Recommendation strategy** setting (top of the plugin settings). Choose how orders are coloured brew or
+  skip: *Expected value* (new, default), *Bottleneck*, *Adaptive* (the previous policy) or *Greedy* (brew all 3).
+  Expected value needs about 4 % fewer potions than the previous policy for the Reagent Pouch in simulation. See
+  [STRATEGY.md](STRATEGY.md).
+* **Hide orders panel** option: replaces the game's potion orders list with a plugin overlay.
 * **Mixing guidance** (new, all toggles in the Highlights and Misclick protection sections). Walks you through the
   mixing half of the loop: levers, then vessel, then stations, then conveyor.
   * *Highlight next lever only* — highlights just the lever for the next paste instead of all three.

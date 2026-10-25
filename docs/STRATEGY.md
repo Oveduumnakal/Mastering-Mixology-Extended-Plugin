@@ -1,7 +1,56 @@
-# Adaptive meta-strategy
+# Recommendation strategies
 
 The "Highlight recommended potions" option colours each order green (brew) or red (skip).
-This page explains how it decides and the research behind it.
+Delivering any potion refreshes all three orders, so skipping an order means brewing only the green ones.
+The **Strategy** setting picks the rule set:
+
+| Strategy | What it does | Favours |
+|---|---|---|
+| **Expected value** (default) | Scores every way to deliver from the 3 orders and picks the best long-run rate of useful resin per potion | The colours furthest behind, full batches when they pay, Mixalot |
+| **Bottleneck** | Brew all 3 if at least 2 orders give the colour furthest behind; otherwise only those orders; otherwise the single best order | The single colour furthest behind |
+| **Adaptive** | The original three-regime meta-policy described below | Depends on the deficit shape |
+| **Greedy** | Always brew all 3 | XP per hour and resin per trip; ignores balance |
+
+All strategies use the summed cost of the rewards ticked in Reward Tracking as the target.
+
+## Expected value
+
+1. **Candidates.** Every non-empty subset of the three orders (7 options) is a possible delivery.
+2. **Useful resin.** A delivery's resin is the sum of its orders' resin times 1, 1.2 or 1.4 for one, two or three
+   orders. Each colour is capped at what is still needed, so resin past the target counts for nothing.
+3. **Colour weights.** Each colour's useful resin is multiplied by its deficit divided by the largest deficit.
+   Every colour is offered equally often by the order draw, so the colour furthest behind takes longest to finish and
+   its resin is worth the most. Without this weight the policy overshoots aga by about 1,600 resin and needs 6 % more
+   potions than with it.
+4. **Opportunity cost.** Each potion brewed now uses a turn that a fresh order set could have used. The plugin works
+   out the long-run weighted useful resin per potion, `rate`, by Dinkelbach iteration over all 220 possible order
+   sets, weighted by the in-game order chances (single-colour 5, two-colour 4, Mixalot 3).
+5. **Pick.** The delivery with the highest `weighted useful resin - rate x potions` wins.
+
+The weight exponent was swept (0, 0.5, 1, 1.5, 2, 3, 4, 8, 16). The optimum is flat between 1 and 1.5; 1 is used.
+
+## Simulated results: Reagent Pouch
+
+Own Monte-Carlo simulation (1,000 trials per strategy, the same order sequences for every strategy), target
+13,800 mox / 11,200 aga / 15,100 lye, all 10 recipes unlocked. Model: the three orders are drawn independently by
+the wiki weights, and every delivery refreshes all three.
+
+From 0 resin:
+
+| Strategy | Potions (mean) | p10 to p90 | vs Expected value | Deliveries | Herblore XP | Overshoot m / a / l |
+|---|---:|---:|---:|---:|---:|---:|
+| Expected value | 973 | 959 to 987 | | 518 | 272k | 16 / 49 / 15 |
+| Adaptive | 1,010 | 993 to 1,029 | +3.8 % | 469 | 268k | 38 / 405 / 37 |
+| Bottleneck | 1,013 | 996 to 1,029 | +4.1 % | 458 | 267k | 41 / 341 / 38 |
+| Greedy | 1,134 | 1,092 to 1,179 | +16.5 % | 378 | 286k | 1,309 / 3,911 / 31 |
+
+From 100 / 666 / 182 resin: Expected value 954, Adaptive 1,000, Bottleneck 1,000, Greedy 1,120.
+
+Caveats: potions are not time. Expected value makes about 10 % more deliveries than Bottleneck (more single-potion
+rerolls), and each delivery adds a walk to the conveyor. The model does not include station times, digweed, or
+depositing an unordered potion to reroll.
+
+# Adaptive meta-strategy
 
 ## The adaptive meta-strategy in one paragraph
 

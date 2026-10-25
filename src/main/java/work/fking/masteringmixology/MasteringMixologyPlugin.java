@@ -65,7 +65,7 @@ import static work.fking.masteringmixology.PotionComponent.MOX;
 /**
  * RuneLite plugin that extends the Mastering Mixology minigame: it adds each order's recipe to the interface and
  * highlights the stations, levers, vessel and quick actions to use next. It also tracks reward goals, recommends
- * orders with an adaptive meta-strategy, protects against misclicks and offers accessibility colours.
+ * orders with a selectable strategy, protects against misclicks and offers accessibility colours.
  */
 @PluginDescriptor(name = "Mastering Mixology Extended")
 public class MasteringMixologyPlugin extends Plugin
@@ -176,10 +176,11 @@ public class MasteringMixologyPlugin extends Plugin
 
 	private final Goal goal = new Goal(RewardItem.NONE);
 
-	private final MetaPolicy metaPolicy = new MetaPolicy();
+	/** The policy behind the recommended-potion highlight, created from the Strategy setting. */
+	private RecommendationPolicy recommendationPolicy = RecommendationStrategy.EXPECTED_VALUE.createPolicy();
 
 	/**
-	 * Order slots the meta-policy recommended on the last order rebuild; null when recommendations are off.
+	 * Order slots the recommendation policy picked on the last order rebuild; null when recommendations are off.
 	 */
 	private Set<Integer> recommendedSlots = null;
 	/** The sprite the game shows beside each order slot, which is the icon of the station its modifier needs. */
@@ -231,7 +232,7 @@ public class MasteringMixologyPlugin extends Plugin
 		return potionOrders;
 	}
 
-	/** Returns the order slots the meta-policy recommends brewing, or null when recommendations are off. */
+	/** Returns the order slots the recommendation policy picks, or null when recommendations are off. */
 	Set<Integer> recommendedSlots()
 	{
 		return recommendedSlots;
@@ -285,7 +286,7 @@ public class MasteringMixologyPlugin extends Plugin
 		overlayManager.add(goalInfoBoxOverlay);
 		overlayManager.add(ordersPanelOverlay);
 		previouslyAboveRewardThreshold = false;
-		metaPolicy.reset();
+		recommendationPolicy = config.recommendationStrategy().createPolicy();
 		clientThread.invokeLater(this::registerResinIcons);
 
 		if (client.getGameState() == GameState.LOGGED_IN)
@@ -470,14 +471,18 @@ public class MasteringMixologyPlugin extends Plugin
 				triggerPotionOrderUpdate();
 			});
 
+		if (event.getKey().equals("recommendationStrategy"))
+			recommendationPolicy = config.recommendationStrategy().createPolicy();
+
 		if (event.getKey().equals("highlightRecommendedPotions")
+				|| event.getKey().equals("recommendationStrategy")
 				|| event.getKey().equals("recommendedPotionColor")
 				|| event.getKey().equals("notRecommendedPotionColor")
 				|| event.getKey().equals("dyslexicMixology")
 				|| event.getKey().equals("accessibilityRecommendColor")
 				|| event.getKey().equals("accessibilitySkipColor"))
 		{
-			metaPolicy.reset();
+			recommendationPolicy.reset();
 			clientThread.invokeLater(this::triggerPotionOrderUpdate);
 		}
 
@@ -1003,7 +1008,7 @@ public class MasteringMixologyPlugin extends Plugin
 	 * recommendation and moves the rows to match the chosen sorting.
 	 *
 	 * <p>The rows are found from the interface script (Joshua-F/cs2-scripts, {@code [proc,script7063].cs2}, line 26).
-	 * The meta-policy recommendation is computed once per rebuild, because the orders and the resin state are both
+	 * The recommendation is computed once per rebuild, because the orders and the resin state are both
 	 * stable until the next refresh. It is null when highlighting is disabled, for instance when the toggle is off or
 	 * no rewards are tracked yet.
 	 *
@@ -1105,7 +1110,7 @@ public class MasteringMixologyPlugin extends Plugin
 	}
 
 	/**
-	 * Returns the order indices the adaptive meta-policy recommends brewing
+	 * Returns the order indices the chosen recommendation policy picks
 	 * this turn, or null if highlighting is disabled (config off, no
 	 * rewards selected, or order data missing).
 	 *
@@ -1143,7 +1148,7 @@ public class MasteringMixologyPlugin extends Plugin
 		for (PotionOrder po : potionOrders)
 			ordersBySlot[po.idx()] = po.potionType();
 
-		return metaPolicy.decide(ordersBySlot, resin, target);
+		return recommendationPolicy.decide(ordersBySlot, resin, target);
 	}
 
 	private List<Widget> selectChildren(Widget parent, Predicate<Widget> filter)
