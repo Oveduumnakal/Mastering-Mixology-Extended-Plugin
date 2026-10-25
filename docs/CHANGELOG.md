@@ -10,6 +10,8 @@ Extended-fork releases; the other entries are inherited from upstream.
   [STRATEGY.md](STRATEGY.md).
 * **Cap Concentrate clicks** now blocks only on the last tick before the Retort finishes. It used to block once a
   click would finish the potion, which cut off clicks that still saved a tick.
+* **Retort quick-action colour**: while Concentrate clicks still help, the Retort is drawn in the quick-action colour,
+  like the Agitator and Alembic; it returns to the station colour on the last tick.
 * **Hide orders panel** option: replaces the game's potion orders list with a plugin overlay.
 * **Mixing guidance** (new, all toggles in the Highlights and Misclick protection sections). Walks you through the
   mixing half of the loop: levers, then vessel, then stations, then conveyor.

@@ -80,6 +80,16 @@ public class StationGuardTest
 		assertTrue(StationGuard.concentrateCapReached(15, 16));
 	}
 
+	/** The quick-action colour shows from the first progress up to the last tick. */
+	@Test
+	public void concentrateWorthClickingUntilTheLastTick()
+	{
+		assertFalse(StationGuard.concentrateWorthClicking(0, 16));
+		assertTrue(StationGuard.concentrateWorthClicking(1, 16));
+		assertTrue(StationGuard.concentrateWorthClicking(14, 16));
+		assertFalse(StationGuard.concentrateWorthClicking(15, 16));
+	}
+
 	/** Any potion type works, because the modifier (concentrated) drives the station. */
 	private static PotionType firstConcentrateType()
 	{
