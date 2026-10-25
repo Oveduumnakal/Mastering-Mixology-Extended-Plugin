@@ -122,6 +122,27 @@ public enum PotionType
 		return components;
 	}
 
+	/**
+	 * Returns the potion's name split into the three parts that stand for its three components, in recipe order. The
+	 * first letter of each part is the component's letter, so joining the parts gives the name.
+	 */
+	public String[] nameParts()
+	{
+		switch (this)
+		{
+			case MAMMOTH_MIGHT_MIX: return new String[]{"Mammoth", "-might ", "mix"};
+			case MYSTIC_MANA_AMALGAM: return new String[]{"Mystic ", "mana ", "amalgam"};
+			case MARLEYS_MOONLIGHT: return new String[]{"Marley's ", "moon", "light"};
+			case ALCO_AUGMENTATOR: return new String[]{"Alco", "-augment", "ator"};
+			case AZURE_AURA_MIX: return new String[]{"Azure ", "aura ", "mix"};
+			case AQUALUX_AMALGAM: return new String[]{"Aqua", "lux ", "amalgam"};
+			case LIPLACK_LIQUOR: return new String[]{"Lip", "lack ", "liquor"};
+			case MEGALITE_LIQUID: return new String[]{"Mega", "lite ", "liquid"};
+			case ANTI_LEECH_LOTION: return new String[]{"Anti", "-leech ", "lotion"};
+			default: return new String[]{"Mix", "al", "ot"};
+		}
+	}
+
 	public String abbreviation()
 	{
 		return abbreviation;

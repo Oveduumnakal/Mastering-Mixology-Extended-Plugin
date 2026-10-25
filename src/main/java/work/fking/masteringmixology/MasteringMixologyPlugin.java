@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -150,6 +151,9 @@ public class MasteringMixologyPlugin extends Plugin
 	private InventoryPotionOverlay potionOverlay;
 
 	@Inject
+	private OrdersPanelOverlay ordersPanelOverlay;
+
+	@Inject
 	private GoalInfoBoxOverlay goalInfoBoxOverlay;
 
 	private final Map<AlchemyObject, HighlightedObject> highlightedObjects = new LinkedHashMap<>();
@@ -178,6 +182,8 @@ public class MasteringMixologyPlugin extends Plugin
 	 * Order slots the meta-policy recommended on the last order rebuild; null when recommendations are off.
 	 */
 	private Set<Integer> recommendedSlots = null;
+	/** The sprite the game shows beside each order slot, which is the icon of the station its modifier needs. */
+	private final Map<Integer, Integer> orderSprites = new HashMap<>();
 
 	/**
 	 * Lever state used by lever click protection; counts pending lever pulls as already in the vessel.
@@ -219,6 +225,41 @@ public class MasteringMixologyPlugin extends Plugin
 		return inLab;
 	}
 
+	/** Returns the current orders, in the order they are displayed. */
+	List<PotionOrder> potionOrders()
+	{
+		return potionOrders;
+	}
+
+	/** Returns the order slots the meta-policy recommends brewing, or null when recommendations are off. */
+	Set<Integer> recommendedSlots()
+	{
+		return recommendedSlots;
+	}
+
+	/** Returns the sprite id of the station icon beside the order in the given slot, or -1 before it has been read. */
+	int orderSpriteId(int idx)
+	{
+		return orderSprites.getOrDefault(idx, -1);
+	}
+
+	/** Returns the paste of the given colour left in the hopper. */
+	int pasteAmount(PotionComponent component)
+	{
+		switch (component)
+		{
+			case MOX: return client.getVarbitValue(VarbitID.MM_AVAILABLE_MOX);
+			case AGA: return client.getVarbitValue(VarbitID.MM_AVAILABLE_AGA);
+			default:  return client.getVarbitValue(VarbitID.MM_AVAILABLE_LYE);
+		}
+	}
+
+	/** Returns the resin of the given colour the player has earned. */
+	int resinAmount(PotionComponent component)
+	{
+		return client.getVarpValue(component.resinVarpId());
+	}
+
 	/**
 	 * @return true if the player is in the labs region (the area where the minigame takes place)
 	 * the isInlab method only checks if they are inside the actual lab room where the UI is active
@@ -242,6 +283,7 @@ public class MasteringMixologyPlugin extends Plugin
 		overlayManager.add(overlay);
 		overlayManager.add(potionOverlay);
 		overlayManager.add(goalInfoBoxOverlay);
+		overlayManager.add(ordersPanelOverlay);
 		previouslyAboveRewardThreshold = false;
 		metaPolicy.reset();
 		clientThread.invokeLater(this::registerResinIcons);
@@ -351,6 +393,7 @@ public class MasteringMixologyPlugin extends Plugin
 		overlayManager.remove(overlay);
 		overlayManager.remove(potionOverlay);
 		overlayManager.remove(goalInfoBoxOverlay);
+		overlayManager.remove(ordersPanelOverlay);
 		inLab = false;
 	}
 
@@ -416,6 +459,16 @@ public class MasteringMixologyPlugin extends Plugin
 			recalculateGoalData();
 			previouslyAboveRewardThreshold = false;
 		}
+
+		if (event.getKey().equals("hideOrdersPanel"))
+			clientThread.invokeLater(() ->
+			{
+				var baseWidget = client.getWidget(COMPONENT_POTION_ORDERS);
+				if (baseWidget != null)
+					setOrdersPanelHidden(baseWidget, config.hideOrdersPanel());
+
+				triggerPotionOrderUpdate();
+			});
 
 		if (event.getKey().equals("highlightRecommendedPotions")
 				|| event.getKey().equals("recommendedPotionColor")
@@ -939,6 +992,8 @@ public class MasteringMixologyPlugin extends Plugin
 
 		if (scriptId == PROC_MASTERING_MIXOLOGY_BUILD_POTION_ORDERS)
 			updatePotionOrdersComponent(baseWidget);
+		else if (config.hideOrdersPanel())
+			setOrdersPanelHidden(baseWidget, true);
 		else
 			appendResins(baseWidget);
 	}
@@ -986,6 +1041,9 @@ public class MasteringMixologyPlugin extends Plugin
 				continue;
 			}
 
+			orderSprites.put(order.idx(), orderGraphic.getSpriteId());
+			LOGGER.debug("Order {} modifier {} sprite {}",
+					order.idx(), order.potionModifier(), orderGraphic.getSpriteId());
 			var builder = new StringBuilder(orderText.getText());
 			boolean skipped = recommendedSlots != null && !order.fulfilled() && !recommendedSlots.contains(order.idx());
 			Color skipColor = config.accessibilityMode()
@@ -1020,6 +1078,9 @@ public class MasteringMixologyPlugin extends Plugin
 				orderText.revalidate();
 			}
 		}
+
+		for (var child : children)
+			child.setHidden(config.hideOrdersPanel());
 
 		updateMixGuidance();
 	}
@@ -1095,6 +1156,13 @@ public class MasteringMixologyPlugin extends Plugin
 		return Arrays.stream(children)
 				.filter(filter)
 				.collect(Collectors.toUnmodifiableList());
+	}
+
+	/** Hides or shows every element the game draws in the orders panel, including its paste counts. */
+	private void setOrdersPanelHidden(Widget baseWidget, boolean hidden)
+	{
+		for (var child : selectChildren(baseWidget, widget -> true))
+			child.setHidden(hidden);
 	}
 
 	private void appendResins(Widget baseWidget)
@@ -1360,6 +1428,24 @@ public class MasteringMixologyPlugin extends Plugin
 
 		updateMixGuidance();
 		triggerPotionOrderUpdate();
+		retryStationHighlight();
+	}
+
+	/**
+	 * Highlights the next station when nothing is highlighted yet. The orders can arrive after the lab opens, for
+	 * instance right after logging in, so the check made when the lab opened may have found no orders.
+	 */
+	private void retryStationHighlight()
+	{
+		if (!inLab || alembicPotionType != null || agitatorPotionType != null || retortPotionType != null)
+			return;
+
+		if (highlightedObjects.containsKey(AlchemyObject.ALEMBIC)
+				|| highlightedObjects.containsKey(AlchemyObject.AGITATOR)
+				|| highlightedObjects.containsKey(AlchemyObject.RETORT))
+			return;
+
+		tryHighlightNextStation();
 	}
 
 	/**

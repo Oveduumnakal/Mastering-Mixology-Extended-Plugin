@@ -47,6 +47,18 @@ public interface MasteringMixologyConfig extends Config
 	}
 
 	@ConfigItem(
+			keyName = "hideOrdersPanel",
+			name = "Hide orders panel",
+			description = "Hides the game's potion orders list and shows the orders, recipes and recommendations in a "
+					+ "plugin overlay instead",
+			position = 1
+	)
+	default boolean hideOrdersPanel()
+	{
+		return false;
+	}
+
+	@ConfigItem(
 			keyName = "highlightLevers",
 			name = "Highlight levers",
 			description = "Highlight levers",
