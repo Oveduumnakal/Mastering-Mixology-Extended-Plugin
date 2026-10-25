@@ -18,7 +18,7 @@ import java.util.Set;
  * <p>The decision returned is the set of order indices (0..2) the player
  * should brew. The plugin maps that to UI colouring (green vs red text).
  */
-public class MetaPolicy
+public class MetaPolicy implements RecommendationPolicy
 {
 	/** The deficit shape the policy is currently responding to. */
 	public enum State
@@ -41,6 +41,7 @@ public class MetaPolicy
 
 	private State state = State.SINGLE_BN;
 
+	@Override
 	public void reset()
 	{
 		state = State.SINGLE_BN;
@@ -64,18 +65,11 @@ public class MetaPolicy
 	 * @param target     [mox, aga, lye] total target (sum of selected reward costs)
 	 * @return set of order indices (0..2) the player should brew this turn
 	 */
+	@Override
 	public Set<Integer> decide(PotionType[] orders, int[] resin, int[] target)
 	{
-		int[] deficit = new int[3];
-		for (int c = 0; c < 3; c++)
-			deficit[c] = Math.max(target[c] - resin[c], 0);
-
-		Integer[] colorIdx = {0, 1, 2};
-		Arrays.sort(colorIdx, (a, b) ->
-		{
-			int cmp = Integer.compare(deficit[b], deficit[a]);
-			return cmp != 0 ? cmp : Integer.compare(a, b);
-		});
+		int[] deficit = deficit(resin, target);
+		Integer[] colorIdx = rankColours(deficit);
 		int dMax = deficit[colorIdx[0]];
 		int dMid = deficit[colorIdx[1]];
 		int dMin = deficit[colorIdx[2]];
@@ -118,12 +112,34 @@ public class MetaPolicy
 		}
 	}
 
+	/** Returns the resin still needed per colour, never below zero. */
+	static int[] deficit(int[] resin, int[] target)
+	{
+		int[] deficit = new int[3];
+		for (int c = 0; c < 3; c++)
+			deficit[c] = Math.max(target[c] - resin[c], 0);
+
+		return deficit;
+	}
+
+	/** Returns the colour indices ordered by deficit, largest first; a tie goes to the lower colour index. */
+	static Integer[] rankColours(int[] deficit)
+	{
+		Integer[] colorIdx = {0, 1, 2};
+		Arrays.sort(colorIdx, (a, b) ->
+		{
+			int cmp = Integer.compare(deficit[b], deficit[a]);
+			return cmp != 0 ? cmp : Integer.compare(a, b);
+		});
+		return colorIdx;
+	}
+
 	/**
 	 * single_bn: if ≥2 of the 3 orders give the top-deficit colour, brew all
 	 * 3; else brew the slots that give that colour; else brew the single
 	 * best-deficit slot.
 	 */
-	private Set<Integer> singleBn(PotionType[] orders, int[] deficit, int topColorOrd)
+	static Set<Integer> singleBn(PotionType[] orders, int[] deficit, int topColorOrd)
 	{
 		PotionComponent top = PotionComponent.ENTRIES[topColorOrd];
 		Set<Integer> giving = slotsGiving(orders, top);
@@ -305,7 +321,7 @@ public class MetaPolicy
 		return bestIdx;
 	}
 
-	private static Set<Integer> all3()
+	static Set<Integer> all3()
 	{
 		Set<Integer> s = new HashSet<>(3);
 		s.add(0);

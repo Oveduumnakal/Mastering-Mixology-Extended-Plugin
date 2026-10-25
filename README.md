@@ -59,9 +59,9 @@ All of these are off by default.
 
 - **Brew or skip, by colour**
 
-  Colour each order green (brew) or red (skip), based on the resin you still need for the rewards you ticked. The
-  recommendation comes from a strategy proven near-optimal in simulation; the details are in the
-  [strategy notes](docs/STRATEGY.md). It is off by default and needs at least one reward ticked.
+  Colour each order green (brew) or red (skip), based on the resin you still need for the rewards you ticked. Pick
+  the strategy: Expected value (default), Bottleneck, Adaptive or Greedy. The details and simulated results are in
+  the [strategy notes](docs/STRATEGY.md). It is off by default and needs at least one reward ticked.
 
 ### The order list and the lab
 

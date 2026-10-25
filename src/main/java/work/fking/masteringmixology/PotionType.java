@@ -47,6 +47,8 @@ public enum PotionType
 	private final String abbreviation;
 	private final int experience;
 	private final PotionComponent[] components;
+	private final int[] resinYield;
+	private final int orderWeight;
 
 	PotionType(int itemId, int modifiedItemId, int experience, PotionComponent... components)
 	{
@@ -56,6 +58,38 @@ public enum PotionType
 		this.experience = experience;
 		this.components = components;
 		this.abbreviation = "" + components[0].character() + components[1].character() + components[2].character();
+		this.resinYield = resinYield(components);
+		this.orderWeight = 6 - distinctColours(components);
+	}
+
+	/**
+	 * Works out the resin an ordered potion gives per colour: 20 of a colour used two or three times, 10 of the single
+	 * colour in a two-colour potion, and 20 of each colour in Mixalot.
+	 */
+	private static int[] resinYield(PotionComponent[] components)
+	{
+		int[] count = new int[PotionComponent.ENTRIES.length];
+		for (var component : components)
+			count[component.ordinal()]++;
+
+		boolean twoColours = distinctColours(components) == 2;
+		int[] yield = new int[count.length];
+		for (int c = 0; c < count.length; c++)
+		{
+			if (count[c] == 0)
+				continue;
+
+			yield[c] = count[c] == 1 && twoColours ? 10 : 20;
+		}
+
+		return yield;
+	}
+
+	private static int distinctColours(PotionComponent[] components)
+	{
+		return (int) Arrays.stream(components)
+				.distinct()
+				.count();
 	}
 
 	public static PotionType fromItemId(int itemId)
@@ -120,6 +154,21 @@ public enum PotionType
 	public PotionComponent[] components()
 	{
 		return components;
+	}
+
+	/** Returns the base resin of the given colour index (0 mox, 1 aga, 2 lye) that fulfilling an order gives. */
+	public int resinYield(int colour)
+	{
+		return resinYield[colour];
+	}
+
+	/**
+	 * Returns the potion's relative chance of being ordered: 5 for single-colour potions, 4 for two-colour potions and
+	 * 3 for Mixalot, as listed on the OSRS Wiki.
+	 */
+	public int orderWeight()
+	{
+		return orderWeight;
 	}
 
 	/**

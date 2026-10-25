@@ -25,6 +25,19 @@ public interface MasteringMixologyConfig extends Config
 	String HIGHLIGHTS = "Highlights";
 
 	@ConfigItem(
+			keyName = "recommendationStrategy",
+			name = "Strategy",
+			description = "Expected value: the delivery with the most useful resin per potion, favouring the colours "
+					+ "furthest behind. Bottleneck: favours the single colour furthest behind. Adaptive: the original "
+					+ "three-mode policy. Greedy: always brew all 3.",
+			position = 0
+	)
+	default RecommendationStrategy recommendationStrategy()
+	{
+		return RecommendationStrategy.EXPECTED_VALUE;
+	}
+
+	@ConfigItem(
 			keyName = "inventoryPotionTags",
 			name = "Inventory Potion Tags",
 			description = "How potions should be tagged in the inventory",
@@ -480,7 +493,7 @@ public interface MasteringMixologyConfig extends Config
 
 	@ConfigSection(
 			name = "Recommended-Potion Highlight",
-			description = "Colour each order green (brew it) or red (skip it) based on the adaptive meta-strategy",
+			description = "Colour each order green (brew it) or red (skip it) based on the chosen strategy",
 			position = 15
 	)
 	String RECOMMENDED_HIGHLIGHT = "RecommendedHighlight";
@@ -489,7 +502,7 @@ public interface MasteringMixologyConfig extends Config
 			section = RECOMMENDED_HIGHLIGHT,
 			keyName = "highlightRecommendedPotions",
 			name = "Highlight recommended potions",
-			description = "Colours each order's name green if the adaptive meta-strategy recommends brewing it, red "
+			description = "Colours each order's name green if the chosen strategy recommends brewing it, red "
 					+ "otherwise. Requires at least one tracked reward in Reward Tracking.",
 			position = 1
 	)
@@ -502,7 +515,7 @@ public interface MasteringMixologyConfig extends Config
 			section = RECOMMENDED_HIGHLIGHT,
 			keyName = "recommendedPotionColor",
 			name = "Recommended colour",
-			description = "Text colour for orders the meta-strategy says you should brew",
+			description = "Text colour for orders the strategy says you should brew",
 			position = 2
 	)
 	default Color recommendedPotionColor()
@@ -514,7 +527,7 @@ public interface MasteringMixologyConfig extends Config
 			section = RECOMMENDED_HIGHLIGHT,
 			keyName = "notRecommendedPotionColor",
 			name = "Skip colour",
-			description = "Text colour for orders the meta-strategy says you should skip (reroll)",
+			description = "Text colour for orders the strategy says you should skip (reroll)",
 			position = 3
 	)
 	default Color notRecommendedPotionColor()
@@ -547,7 +560,7 @@ public interface MasteringMixologyConfig extends Config
 			section = ACCESSIBILITY,
 			keyName = "accessibilityRecommendColor",
 			name = "Recommend colour",
-			description = "Text colour for orders the meta-strategy says you should brew (applied when accessibility "
+			description = "Text colour for orders the strategy says you should brew (applied when accessibility "
 					+ "mode is on)",
 			position = 2
 	)
@@ -560,7 +573,7 @@ public interface MasteringMixologyConfig extends Config
 			section = ACCESSIBILITY,
 			keyName = "accessibilitySkipColor",
 			name = "Skip colour",
-			description = "Text colour for orders the meta-strategy says you should skip (applied when accessibility "
+			description = "Text colour for orders the strategy says you should skip (applied when accessibility "
 					+ "mode is on)",
 			position = 3
 	)

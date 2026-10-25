@@ -151,7 +151,7 @@ final class MixGuidance
 	}
 
 	/**
-	 * @return true if the order is part of the plan: no recommendation is active, or the meta-policy recommends it
+	 * @return true if the order is part of the plan: no recommendation is active, or the chosen strategy recommends it
 	 */
 	static boolean planned(PotionOrder order, Set<Integer> recommendedSlots)
 	{
