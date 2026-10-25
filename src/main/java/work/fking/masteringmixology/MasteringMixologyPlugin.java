@@ -293,17 +293,22 @@ public class MasteringMixologyPlugin extends Plugin
 			clientThread.invokeLater(this::initialize);
 	}
 
-	private void registerResinIcons()
+	/**
+	 * Adds the recipe block sprites to the client's mod icons, or repaints them if they are already there.
+	 *
+	 * @return false while the client has not loaded its mod icons yet, so the client thread runs this again later
+	 */
+	private boolean registerResinIcons()
 	{
 		if (resinIconIdx != null)
 		{
 			applyResinIconPalettes();
-			return;
+			return true;
 		}
 
 		net.runelite.api.IndexedSprite[] mod = client.getModIcons();
 		if (mod == null)
-			return;
+			return false;
 
 		final int count = SKIP_ICON + 1;
 		int base = mod.length;
@@ -321,6 +326,8 @@ public class MasteringMixologyPlugin extends Plugin
 		client.setModIcons(extended);
 		resinIconIdx = indices;
 		resinIconSprites = sprites;
+		triggerPotionOrderUpdate();
+		return true;
 	}
 
 	private net.runelite.api.IndexedSprite createBlockSprite(Color color)
