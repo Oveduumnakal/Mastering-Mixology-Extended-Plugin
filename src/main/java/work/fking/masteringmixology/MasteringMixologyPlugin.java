@@ -388,6 +388,10 @@ public class MasteringMixologyPlugin extends Plugin
 		}
 	}
 
+	/**
+	 * Removes the overlays and highlights and clears the per-session state. The game's orders panel is shown again
+	 * and rebuilt, so neither a hidden panel nor the appended recipes outlive the plugin.
+	 */
 	@Override
 	protected void shutDown()
 	{
@@ -396,6 +400,20 @@ public class MasteringMixologyPlugin extends Plugin
 		overlayManager.remove(goalInfoBoxOverlay);
 		overlayManager.remove(ordersPanelOverlay);
 		inLab = false;
+		highlightedObjects.clear();
+		agitatorQuickActionTicks = 0;
+		alembicQuickActionTicks = 0;
+		pendingLeverPulls.clear();
+		vesselCollected = false;
+		retortProgressTracker.onPotionCleared();
+		clientThread.invokeLater(() ->
+		{
+			var baseWidget = client.getWidget(COMPONENT_POTION_ORDERS);
+			if (baseWidget != null)
+				setOrdersPanelHidden(baseWidget, false);
+
+			triggerPotionOrderUpdate();
+		});
 	}
 
 	@Subscribe
