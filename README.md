@@ -60,8 +60,8 @@ All of these are off by default.
 - **Brew or skip, by colour**
 
   Colour each order green (brew) or red (skip), based on the resin you still need for the rewards you ticked. Pick
-  the strategy: Expected value (default), Bottleneck, Adaptive or Greedy. The details and simulated results are in
-  the [strategy notes](docs/STRATEGY.md). It is off by default and needs at least one reward ticked.
+  the strategy: Expected value (default), Bottleneck, Adaptive or Greedy. It is off by default and needs at least one
+  reward ticked.
 
 ### The order list and the lab
 
@@ -98,5 +98,4 @@ All of these are off by default.
 - [Report a bug](https://github.com/Oveduumnakal/Mastering-Mixology-Extended-Plugin/issues/new?template=bug_report.yml)
 - [Request a feature](https://github.com/Oveduumnakal/Mastering-Mixology-Extended-Plugin/issues/new?template=feature_request.yml)
 - [Changelog](docs/CHANGELOG.md)
-- [Strategy notes](docs/STRATEGY.md)
 - [Buy me a coffee](https://buymeacoffee.com/oveduumnakal)
