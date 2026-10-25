@@ -151,22 +151,22 @@ public class Goal
 		if (config.trackPotionStorage())
 			list.add(new Selection(RewardItem.POTION_STORAGE, 1));
 
-		if (config.trackChuggingBarrel())
+		if (config.chuggingBarrelQuantity() > 0)
 			list.add(new Selection(RewardItem.CHUGGING_BARREL, config.chuggingBarrelQuantity()));
 
 		if (config.trackAlchemistsAmulet())
 			list.add(new Selection(RewardItem.ALCHEMISTS_AMULET, 1));
 
-		if (config.trackApprenticePack())
+		if (config.apprenticePackQuantity() > 0)
 			list.add(new Selection(RewardItem.APPRENTICE_POTION_PACK, config.apprenticePackQuantity()));
 
-		if (config.trackAdeptPack())
+		if (config.adeptPackQuantity() > 0)
 			list.add(new Selection(RewardItem.ADEPT_POTION_PACK, config.adeptPackQuantity()));
 
-		if (config.trackExpertPack())
+		if (config.expertPackQuantity() > 0)
 			list.add(new Selection(RewardItem.EXPERT_POTION_PACK, config.expertPackQuantity()));
 
-		if (config.trackAldarium())
+		if (config.aldariumQuantity() > 0)
 			list.add(new Selection(RewardItem.ALDARIUM, config.aldariumQuantity()));
 
 		return list;

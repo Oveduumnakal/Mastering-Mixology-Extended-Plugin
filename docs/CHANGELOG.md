@@ -8,6 +8,8 @@ Extended-fork releases; the other entries are inherited from upstream.
   skip: *Expected value* (new, default), *Bottleneck*, *Adaptive* (the previous policy) or *Greedy* (brew all 3).
   Expected value needs about 4 % fewer potions than the previous policy for the Reagent Pouch in simulation. See
   [STRATEGY.md](STRATEGY.md).
+* **Reward tracking**: the potion packs, Aldarium and the Chugging Barrel use a single quantity setting, where 0 means
+  not tracked, instead of a tick box plus a quantity. Saved settings carry over.
 * **Hide orders panel** option: replaces the game's potion orders list with a plugin overlay.
 * **Mixing guidance** (new, all toggles in the Highlights and Misclick protection sections). Walks you through the
   mixing half of the loop: levers, then vessel, then stations, then conveyor.
