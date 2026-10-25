@@ -482,10 +482,7 @@ public class MasteringMixologyPlugin extends Plugin
 				|| event.getKey().equals("accessibilityAgaColor")
 				|| event.getKey().equals("accessibilityLyeColor")
 				|| event.getKey().equals("accessibilitySkipColor"))
-		{
-			recommendationPolicy.reset();
 			clientThread.invokeLater(this::triggerPotionOrderUpdate);
-		}
 
 		if (event.getKey().equals("useLetters")
 				|| event.getKey().equals("colorblindMode")
