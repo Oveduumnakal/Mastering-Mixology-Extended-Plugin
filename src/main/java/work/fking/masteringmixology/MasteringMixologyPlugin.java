@@ -1008,8 +1008,8 @@ public class MasteringMixologyPlugin extends Plugin
 	 *
 	 * <p>The rows are found from the interface script (Joshua-F/cs2-scripts, {@code [proc,script7063].cs2}, line 26).
 	 * The recommendation is computed once per rebuild, because the orders and the resin state are both
-	 * stable until the next refresh. It is null when highlighting is disabled, for instance when the toggle is off or
-	 * no rewards are tracked yet.
+	 * stable until the next refresh. It is null when there is nothing to recommend, for instance when no rewards are
+	 * tracked yet.
 	 *
 	 * <p>The filtered children are laid out as a text for the heading, then a graphic and a text for each order:
 	 * <pre>{@code
