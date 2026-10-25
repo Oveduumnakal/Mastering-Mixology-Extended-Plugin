@@ -201,11 +201,11 @@ public class OrdersPanelOverlay extends Overlay
 
 	private Color skipColor()
 	{
-		return config.accessibilityMode() ? config.accessibilitySkipColor() : config.notRecommendedPotionColor();
+		return config.skipColor();
 	}
 
 	/**
-	 * Draws the three resin letters, or three colour blocks in accessibility mode. A skipped order is drawn all in the
+	 * Draws three colour blocks, or the three resin letters with Use Letters on. A skipped order is drawn all in the
 	 * skip colour.
 	 */
 	private void drawRecipe(Graphics2D graphics, PotionType potionType, int x, int baseline, boolean skipped)
@@ -216,7 +216,7 @@ public class OrdersPanelOverlay extends Overlay
 		{
 			var color = skipped ? skipColor() : plugin.effectiveComponentColor(component);
 
-			if (config.accessibilityMode())
+			if (!config.useLetters())
 			{
 				graphics.setColor(color);
 				graphics.fillRect(x, baseline - BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);

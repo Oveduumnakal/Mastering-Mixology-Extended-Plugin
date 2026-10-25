@@ -8,6 +8,14 @@ Extended-fork releases; the other entries are inherited from upstream.
   skip: *Expected value* (new, default), *Bottleneck*, *Adaptive* (the previous policy) or *Greedy* (brew all 3).
   Expected value needs about 4 % fewer potions than the previous policy for the Reagent Pouch in simulation. See
   [STRATEGY.md](STRATEGY.md).
+* **Colors** section (was Accessibility), above Highlights. It holds *Use Letters* plus the paste, skip, station,
+  quick-action and digweed colours.
+  * Recipes are coloured blocks by default; *Use Letters* (off by default) shows M/A/L letters instead. It replaces
+    *Dyslexic/Colorblind Mode*.
+  * The paste colours apply everywhere, with new defaults: Mox `#3984FF`, Aga `#6BFF76`, Lye `#FF0000`; skip `#4A4A4A`.
+  * Order names in the game's order list are coloured by paste, like the orders overlay.
+* **Recommendations are always on** once a reward is tracked; pick *Greedy* to skip nothing. The Recommended-Potion
+  Highlight section and the recommend colours are removed.
 * **Hide orders panel** option: replaces the game's potion orders list with a plugin overlay.
 * **Mixing guidance** (new, all toggles in the Highlights and Misclick protection sections). Walks you through the
   mixing half of the loop: levers, then vessel, then stations, then conveyor.

@@ -18,6 +18,109 @@ public interface MasteringMixologyConfig extends Config
 	String CONFIG_GROUP = "masteringmixology";
 
 	@ConfigSection(
+			name = "Colors",
+			description = "Recipe style and the colours used for pastes, skipped orders and highlights",
+			position = 9
+	)
+	String COLORS = "Colors";
+
+	@ConfigItem(
+			section = COLORS,
+			keyName = "useLetters",
+			name = "Use Letters",
+			description = "Show recipes as M/A/L letters instead of coloured blocks",
+			position = 1
+	)
+	default boolean useLetters()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+			section = COLORS,
+			keyName = "stationHighlightColor",
+			name = "Station color",
+			description = "Configures the default station highlight color",
+			position = 2
+	)
+	default Color stationHighlightColor()
+	{
+		return Color.MAGENTA;
+	}
+
+	@ConfigItem(
+			section = COLORS,
+			keyName = "stationQuickActionHighlightColor",
+			name = "Quick-action color",
+			description = "Configures the station quick-action highlight color",
+			position = 3
+	)
+	default Color stationQuickActionHighlightColor()
+	{
+		return Color.GREEN;
+	}
+
+	@ConfigItem(
+			section = COLORS,
+			keyName = "digweedHighlightColor",
+			name = "DigWeed color",
+			description = "Configures the digweed highlight color",
+			position = 4
+	)
+	default Color digweedHighlightColor()
+	{
+		return Color.GREEN;
+	}
+
+	@ConfigItem(
+			section = COLORS,
+			keyName = "accessibilitySkipColor",
+			name = "Skip color",
+			description = "Colour for orders the strategy says you should skip (reroll)",
+			position = 5
+	)
+	default Color skipColor()
+	{
+		return new Color(0x4A4A4A);
+	}
+
+	@ConfigItem(
+			section = COLORS,
+			keyName = "accessibilityMoxColor",
+			name = "Mox color",
+			description = "Colour for Mox (recipe, potion names, lever, progress bar)",
+			position = 6
+	)
+	default Color moxColor()
+	{
+		return new Color(0x3984FF);
+	}
+
+	@ConfigItem(
+			section = COLORS,
+			keyName = "accessibilityAgaColor",
+			name = "Aga color",
+			description = "Colour for Aga (recipe, potion names, lever, progress bar)",
+			position = 7
+	)
+	default Color agaColor()
+	{
+		return new Color(0x6BFF76);
+	}
+
+	@ConfigItem(
+			section = COLORS,
+			keyName = "accessibilityLyeColor",
+			name = "Lye color",
+			description = "Colour for Lye (recipe, potion names, lever, progress bar)",
+			position = 8
+	)
+	default Color lyeColor()
+	{
+		return new Color(0xFF0000);
+	}
+
+	@ConfigSection(
 			name = "Highlights",
 			description = "Highlighting related configuration",
 			position = 10
@@ -163,28 +266,6 @@ public interface MasteringMixologyConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "stationHighlightColor",
-			name = "Station color",
-			description = "Configures the default station highlight color",
-			position = 3
-	)
-	default Color stationHighlightColor()
-	{
-		return Color.MAGENTA;
-	}
-
-	@ConfigItem(
-			keyName = "stationQuickActionHighlightColor",
-			name = "Quick-action color",
-			description = "Configures the station quick-action highlight color",
-			position = 4
-	)
-	default Color stationQuickActionHighlightColor()
-	{
-		return Color.GREEN;
-	}
-
-	@ConfigItem(
 			keyName = "notifyDigweed",
 			name = "Notify DigWeed",
 			description = "Toggles digweed notifications on or off",
@@ -204,17 +285,6 @@ public interface MasteringMixologyConfig extends Config
 	default boolean highlightDigWeed()
 	{
 		return true;
-	}
-
-	@ConfigItem(
-			keyName = "digweedHighlightColor",
-			name = "DigWeed color",
-			description = "Configures the digweed highlight color",
-			position = 7
-	)
-	default Color digweedHighlightColor()
-	{
-		return Color.GREEN;
 	}
 
 	@ConfigItem(
@@ -489,133 +559,6 @@ public interface MasteringMixologyConfig extends Config
 	default int aldariumQuantity()
 	{
 		return 1;
-	}
-
-	@ConfigSection(
-			name = "Recommended-Potion Highlight",
-			description = "Colour each order green (brew it) or red (skip it) based on the chosen strategy",
-			position = 15
-	)
-	String RECOMMENDED_HIGHLIGHT = "RecommendedHighlight";
-
-	@ConfigItem(
-			section = RECOMMENDED_HIGHLIGHT,
-			keyName = "highlightRecommendedPotions",
-			name = "Highlight recommended potions",
-			description = "Colours each order's name green if the chosen strategy recommends brewing it, red "
-					+ "otherwise. Requires at least one tracked reward in Reward Tracking.",
-			position = 1
-	)
-	default boolean highlightRecommendedPotions()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-			section = RECOMMENDED_HIGHLIGHT,
-			keyName = "recommendedPotionColor",
-			name = "Recommended colour",
-			description = "Text colour for orders the strategy says you should brew",
-			position = 2
-	)
-	default Color recommendedPotionColor()
-	{
-		return new Color(0, 200, 0);
-	}
-
-	@ConfigItem(
-			section = RECOMMENDED_HIGHLIGHT,
-			keyName = "notRecommendedPotionColor",
-			name = "Skip colour",
-			description = "Text colour for orders the strategy says you should skip (reroll)",
-			position = 3
-	)
-	default Color notRecommendedPotionColor()
-	{
-		return new Color(220, 50, 50);
-	}
-
-	@ConfigSection(
-			name = "Accessibility",
-			description = "Dyslexia / colour-blind friendly alternatives: replace M/A/L letters with coloured blocks "
-					+ "and swap the recommend/skip text + resin colours for higher-contrast options",
-			position = 20
-	)
-	String ACCESSIBILITY = "Accessibility";
-
-	@ConfigItem(
-			section = ACCESSIBILITY,
-			keyName = "dyslexicMixology",
-			name = "Dyslexic/Colorblind Mode",
-			description = "Replace M/A/L letters with coloured blocks in the order list and inventory tags; apply the "
-					+ "accessibility colours below to recommend/skip text, resin blocks, levers, and progress bars",
-			position = 1
-	)
-	default boolean accessibilityMode()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-			section = ACCESSIBILITY,
-			keyName = "accessibilityRecommendColor",
-			name = "Recommend colour",
-			description = "Text colour for orders the strategy says you should brew (applied when accessibility "
-					+ "mode is on)",
-			position = 2
-	)
-	default Color accessibilityRecommendColor()
-	{
-		return new Color(0xFFC107);
-	}
-
-	@ConfigItem(
-			section = ACCESSIBILITY,
-			keyName = "accessibilitySkipColor",
-			name = "Skip colour",
-			description = "Text colour for orders the strategy says you should skip (applied when accessibility "
-					+ "mode is on)",
-			position = 3
-	)
-	default Color accessibilitySkipColor()
-	{
-		return new Color(0x4A4A4A);
-	}
-
-	@ConfigItem(
-			section = ACCESSIBILITY,
-			keyName = "accessibilityMoxColor",
-			name = "MOX colour",
-			description = "Colour for MOX resin (blocks, lever, progress bar) when accessibility mode is on",
-			position = 4
-	)
-	default Color accessibilityMoxColor()
-	{
-		return new Color(0x9D4EDD);
-	}
-
-	@ConfigItem(
-			section = ACCESSIBILITY,
-			keyName = "accessibilityAgaColor",
-			name = "AGA colour",
-			description = "Colour for AGA resin (blocks, lever, progress bar) when accessibility mode is on",
-			position = 5
-	)
-	default Color accessibilityAgaColor()
-	{
-		return new Color(0x00FFB3);
-	}
-
-	@ConfigItem(
-			section = ACCESSIBILITY,
-			keyName = "accessibilityLyeColor",
-			name = "LYE colour",
-			description = "Colour for LYE resin (blocks, lever, progress bar) when accessibility mode is on",
-			position = 6
-	)
-	default Color accessibilityLyeColor()
-	{
-		return new Color(0xFF6D00);
 	}
 
 	@ConfigSection(
