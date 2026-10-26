@@ -1288,10 +1288,16 @@ public class MasteringMixologyPlugin extends Plugin
 			resetStationHighlight(AlchemyObject.RETORT);
 	}
 
+	/**
+	 * Puts a station back to its normal highlight after a quick action: the station colour, or no highlight at all
+	 * when station highlights are off, so the quick-action colour never lingers.
+	 */
 	public void resetStationHighlight(AlchemyObject alchemyObject)
 	{
 		if (config.highlightStations())
 			highlightObject(alchemyObject, config.stationHighlightColor());
+		else
+			unHighlightObject(alchemyObject);
 	}
 
 	public void unHighlightObject(AlchemyObject alchemyObject)
