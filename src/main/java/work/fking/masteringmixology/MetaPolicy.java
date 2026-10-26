@@ -7,7 +7,7 @@ import java.util.Set;
 /**
  * Adaptive meta-policy that decides which of the 3 visible orders the
  * player should brew this turn. Implements the state machine documented in
- * {@code mixology-sim/STRATEGY.md} §7 with the recommended thresholds.
+ * {@code STRATEGY.md} §7 of PDBoegel's mastering-mixology-sim repository, with the recommended thresholds.
  *
  * <p>State is maintained across calls so the policy can detect when the
  * deficit shape transitions between (single-bottleneck / two-bottleneck /
@@ -32,7 +32,7 @@ public class MetaPolicy implements RecommendationPolicy
 		BALANCED
 	}
 
-	/** Recommended thresholds from the sweep at 61k/53k/71k. See STRATEGY.md §7. */
+	/** Recommended thresholds from the sweep at 61k/53k/71k (mastering-mixology-sim, STRATEGY.md §7). */
 	public static final double T_DUAL_IN       = 0.20;
 	public static final double T_DUAL_OUT      = 0.25;
 	public static final double T_BALANCED_IN   = 0.20;
