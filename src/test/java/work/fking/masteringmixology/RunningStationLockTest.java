@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
 /**
  * Tests the Agitator and Alembic running locks through the plugin, with a mocked client: clicks on a running station
  * are consumed except during its quick-action window, which opens on the spot animation and closes on the progress
- * updates that follow.
+ * updates that follow. A station counts as running only while the player's last click went to it.
  */
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class RunningStationLockTest
@@ -108,7 +108,30 @@ public class RunningStationLockTest
 	@Test
 	public void runningAgitatorIsLockedOutsideTheQuickAction()
 	{
-		varbit(VarbitID.MM_LAB_AGITATOR_POTION, 1);
+		start("Agitator", AlchemyObject.AGITATOR, VarbitID.MM_LAB_AGITATOR_POTION);
+
+		assertTrue(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
+	}
+
+	/** Walking away pauses the station with its potion still in it; the next click must resume it. */
+	@Test
+	public void pausedStationCanBeResumed()
+	{
+		start("Agitator", AlchemyObject.AGITATOR, VarbitID.MM_LAB_AGITATOR_POTION);
+		start("Alembic", AlchemyObject.ALEMBIC, VarbitID.MM_LAB_ALEMBIC_POTION);
+		walk();
+
+		assertFalse(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
+		assertTrue(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
+		assertFalse(click("Alembic", AlchemyObject.ALEMBIC).isConsumed());
+	}
+
+	/** A blocked click does not count as working the clicked station or as clicking away. */
+	@Test
+	public void blockedClickKeepsTheLock()
+	{
+		start("Agitator", AlchemyObject.AGITATOR, VarbitID.MM_LAB_AGITATOR_POTION);
+		click("Agitator", AlchemyObject.AGITATOR);
 
 		assertTrue(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
 	}
@@ -117,7 +140,7 @@ public class RunningStationLockTest
 	@Test
 	public void agitatorQuickActionWindowLetsClicksThroughForTwoUpdates()
 	{
-		varbit(VarbitID.MM_LAB_AGITATOR_POTION, 1);
+		start("Agitator", AlchemyObject.AGITATOR, VarbitID.MM_LAB_AGITATOR_POTION);
 		spotAnim(SpotanimID.VFX_MACHINERY_ALCHEMY01_AGITATOR01);
 		assertFalse(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
 
@@ -132,7 +155,7 @@ public class RunningStationLockTest
 	@Test
 	public void alembicQuickActionWindowLetsClicksThroughForOneUpdate()
 	{
-		varbit(VarbitID.MM_LAB_ALEMBIC_POTION, 1);
+		start("Alembic", AlchemyObject.ALEMBIC, VarbitID.MM_LAB_ALEMBIC_POTION);
 		spotAnim(SpotanimID.VFX_MACHINERY_ALCHEMY01_ALEMBIC01);
 		assertFalse(click("Alembic", AlchemyObject.ALEMBIC).isConsumed());
 
@@ -144,9 +167,23 @@ public class RunningStationLockTest
 	public void lockOffLetsRunningStationClicksThrough()
 	{
 		when(config.lockAgitatorWhileRunning()).thenReturn(false);
-		varbit(VarbitID.MM_LAB_AGITATOR_POTION, 1);
+		start("Agitator", AlchemyObject.AGITATOR, VarbitID.MM_LAB_AGITATOR_POTION);
 
 		assertFalse(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
+	}
+
+	/** Clicks an idle station and loads a potion into it, as the game does. */
+	private void start(String target, AlchemyObject object, int potionVarbit)
+	{
+		assertFalse(click(target, object).isConsumed());
+		varbit(potionVarbit, 1);
+	}
+
+	private void walk()
+	{
+		MenuEntry entry = mock(MenuEntry.class);
+		when(entry.getType()).thenReturn(MenuAction.WALK);
+		plugin.onMenuOptionClicked(new MenuOptionClicked(entry));
 	}
 
 	private void varbit(int varbitId, int value)

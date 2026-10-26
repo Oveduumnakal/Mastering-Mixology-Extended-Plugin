@@ -172,6 +172,13 @@ public class MasteringMixologyPlugin extends Plugin
 	private int agitatorQuickActionTicks = 0;
 	private int alembicQuickActionTicks = 0;
 
+	/**
+	 * Whether the player's last click went to the Agitator or Alembic. Clicking anything else stops the work, so the
+	 * running lock only holds while this is set.
+	 */
+	private boolean agitatorOperated;
+	private boolean alembicOperated;
+
 	private boolean previouslyAboveRewardThreshold = false;
 
 	private final Goal goal = new Goal(RewardItem.NONE);
@@ -811,7 +818,10 @@ public class MasteringMixologyPlugin extends Plugin
 				&& action != MenuAction.GAME_OBJECT_THIRD_OPTION
 				&& action != MenuAction.GAME_OBJECT_FOURTH_OPTION
 				&& action != MenuAction.GAME_OBJECT_FIFTH_OPTION)
+		{
+			recordOperatedStation(null, action);
 			return;
+		}
 
 		if (isLeverBlocked(event.getId()) || isVesselBlocked(event.getId()))
 		{
@@ -821,11 +831,29 @@ public class MasteringMixologyPlugin extends Plugin
 
 		recordLeverPull(event.getId());
 		AlchemyObject station = StationGuard.stationFromTarget(event.getMenuTarget());
-		if (station == null)
+		if (station != null && (isCapBlocked(station) || isLockBlocked(station) || isRunningLockBlocked(station)))
+		{
+			event.consume();
+			return;
+		}
+
+		recordOperatedStation(station, action);
+	}
+
+	/**
+	 * Remembers which station a let-through click went to. Any other click, except cancel or examine, stops the
+	 * Agitator and Alembic, so a paused station can be clicked again to resume.
+	 */
+	private void recordOperatedStation(AlchemyObject station, MenuAction action)
+	{
+		if (action == MenuAction.CANCEL
+				|| action == MenuAction.EXAMINE_OBJECT
+				|| action == MenuAction.EXAMINE_NPC
+				|| action == MenuAction.EXAMINE_ITEM_GROUND)
 			return;
 
-		if (isCapBlocked(station) || isLockBlocked(station) || isRunningLockBlocked(station))
-			event.consume();
+		agitatorOperated = station == AlchemyObject.AGITATOR;
+		alembicOperated = station == AlchemyObject.ALEMBIC;
 	}
 
 	private boolean isLeverBlocked(int objectId)
@@ -908,16 +936,19 @@ public class MasteringMixologyPlugin extends Plugin
 		return !StationGuard.isStationNeeded(station, occupied, potionOrders, heldItemIds());
 	}
 
-	/** Consumes Agitator and Alembic clicks while the station runs, except during its quick-action window. */
+	/**
+	 * Consumes Agitator and Alembic clicks while the player works the station, except during its quick-action window.
+	 * A potion left in a station the player walked away from does not count as running.
+	 */
 	private boolean isRunningLockBlocked(AlchemyObject station)
 	{
 		if (station == AlchemyObject.AGITATOR)
-			return StationGuard.runningLockBlocks(config.lockAgitatorWhileRunning(), agitatorPotionType != null,
-					agitatorQuickActionTicks > 0);
+			return StationGuard.runningLockBlocks(config.lockAgitatorWhileRunning(),
+					agitatorPotionType != null && agitatorOperated, agitatorQuickActionTicks > 0);
 
 		if (station == AlchemyObject.ALEMBIC)
-			return StationGuard.runningLockBlocks(config.lockAlembicWhileRunning(), alembicPotionType != null,
-					alembicQuickActionTicks > 0);
+			return StationGuard.runningLockBlocks(config.lockAlembicWhileRunning(),
+					alembicPotionType != null && alembicOperated, alembicQuickActionTicks > 0);
 
 		return false;
 	}

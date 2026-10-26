@@ -9,7 +9,7 @@ Extended-fork releases; the other entries are inherited from upstream.
   Expected value needs about 4 % fewer potions than the previous policy for the Reagent Pouch in simulation. See
   [STRATEGY.md](STRATEGY.md).
 * **Lock Agitator / Alembic while running** (Misclick protection, off by default): consumes clicks on a running
-  station except during its quick-action window.
+  station except during its quick-action window. Clicking away pauses the station, and the next click on it resumes.
 * **Hide orders panel** option: replaces the game's potion orders list with a plugin overlay.
 * **Mixing guidance** (new, all toggles in the Highlights and Misclick protection sections). Walks you through the
   mixing half of the loop: levers, then vessel, then stations, then conveyor.
