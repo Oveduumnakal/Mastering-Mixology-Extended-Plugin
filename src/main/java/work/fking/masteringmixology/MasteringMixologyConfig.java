@@ -188,10 +188,11 @@ public interface MasteringMixologyConfig extends Config
 	}
 
 	@ConfigItem(
+			section = HIGHLIGHTS,
 			keyName = "highlightLevers",
-			name = "Highlight levers",
+			name = "Levers",
 			description = "Highlight levers",
-			position = 2
+			position = 0
 	)
 	default boolean highlightLevers()
 	{
@@ -199,11 +200,12 @@ public interface MasteringMixologyConfig extends Config
 	}
 
 	@ConfigItem(
+			section = HIGHLIGHTS,
 			keyName = "highlightNextLeverOnly",
-			name = "Highlight next lever only",
+			name = "Next lever only",
 			description = "Only highlight the next lever to pull for the order you're mixing, instead of all three "
 					+ "levers",
-			position = 2
+			position = 1
 	)
 	default boolean highlightNextLeverOnly()
 	{
@@ -211,8 +213,9 @@ public interface MasteringMixologyConfig extends Config
 	}
 
 	@ConfigItem(
+			section = HIGHLIGHTS,
 			keyName = "highlightMixingVessel",
-			name = "Highlight mixing vessel",
+			name = "Mixing vessel",
 			description = "Highlight the mixing vessel green when it holds three pastes and is ready to mix",
 			position = 2
 	)
@@ -222,11 +225,12 @@ public interface MasteringMixologyConfig extends Config
 	}
 
 	@ConfigItem(
+			section = HIGHLIGHTS,
 			keyName = "highlightConveyorBelt",
-			name = "Highlight conveyor belt",
+			name = "Conveyor belt",
 			description = "Highlight the conveyor belt green when your finished potions match every order you're "
 					+ "making",
-			position = 2
+			position = 3
 	)
 	default boolean highlightConveyorBelt()
 	{
@@ -234,10 +238,11 @@ public interface MasteringMixologyConfig extends Config
 	}
 
 	@ConfigItem(
+			section = HIGHLIGHTS,
 			keyName = "highlightStations",
-			name = "Highlight stations",
+			name = "Stations",
 			description = "Toggles alchemical station highlighting on or off",
-			position = 2
+			position = 4
 	)
 	default boolean highlightStations()
 	{
@@ -257,10 +262,11 @@ public interface MasteringMixologyConfig extends Config
 	}
 
 	@ConfigItem(
+			section = HIGHLIGHTS,
 			keyName = "highlightQuickActionEvents",
-			name = "Highlight quick-action events",
+			name = "Quick-action events",
 			description = "Toggles station quick-action events highlighting on or off",
-			position = 2
+			position = 5
 	)
 	default boolean highlightQuickActionEvents()
 	{
@@ -290,8 +296,9 @@ public interface MasteringMixologyConfig extends Config
 	}
 
 	@ConfigItem(
+			section = HIGHLIGHTS,
 			keyName = "highlightDigweed",
-			name = "Highlight DigWeed",
+			name = "DigWeed",
 			description = "Toggles digweed highlighting on or off",
 			position = 6
 	)
@@ -315,7 +322,8 @@ public interface MasteringMixologyConfig extends Config
 			section = HIGHLIGHTS,
 			keyName = "highlightBorderWidth",
 			name = "Border width",
-			description = "Configures the border width of the object highlights"
+			description = "Configures the border width of the object highlights",
+			position = 7
 	)
 	default int highlightBorderWidth()
 	{
@@ -326,7 +334,8 @@ public interface MasteringMixologyConfig extends Config
 			section = HIGHLIGHTS,
 			keyName = "highlightFeather",
 			name = "Feather",
-			description = "Configures the amount of 'feathering' to be applied to the object highlights"
+			description = "Configures the amount of 'feathering' to be applied to the object highlights",
+			position = 8
 	)
 	default int highlightFeather()
 	{

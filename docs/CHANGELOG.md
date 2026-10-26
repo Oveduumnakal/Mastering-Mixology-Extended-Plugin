@@ -18,10 +18,12 @@ Extended-fork releases; the other entries are inherited from upstream.
     colour blindness.
 * **Recommendations are always on** once a reward is tracked; pick *Greedy* to skip nothing. The Recommended-Potion
   Highlight section and the recommend colours are removed.
+* **Highlights** section now holds the highlight toggles, without the "Highlight" prefix: *Levers*, *Next lever
+  only*, *Mixing vessel*, *Conveyor belt*, *Stations*, *Quick-action events* and *DigWeed*. Saved settings carry over.
 * **Hide orders panel** option: replaces the game's potion orders list with a plugin overlay.
 * **Mixing guidance** (new, all toggles in the Highlights and Misclick protection sections). Walks you through the
   mixing half of the loop: levers, then vessel, then stations, then conveyor.
-  * *Highlight next lever only* — highlights just the lever for the next paste instead of all three.
+  * *Next lever only* — highlights just the lever for the next paste instead of all three.
   * *Lever click protection* — only the next lever can be pulled. If the vessel holds pastes that match no order,
     every lever stays pullable so you cannot get stuck. A fast double click cannot let a second paste through.
   * *Potion protection* — blocks mixing at the vessel when its three pastes do not make a potion for an open order.
