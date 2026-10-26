@@ -178,11 +178,13 @@ public class MasteringMixologyPlugin extends Plugin
 	private int alembicQuickActionTicks = 0;
 
 	/**
-	 * Clicks the running lock still lets through in the current quick-action window: two on the Agitator and one on
-	 * the Alembic per window, so spam clicks are consumed.
+	 * Clicks the running lock still lets through in the current quick-action window, at most one per tick: one in the
+	 * Alembic's one-tick window and one in each tick of the Agitator's two-tick window. Spam clicks are consumed.
 	 */
 	private int agitatorQuickActionClicks = 0;
 	private int alembicQuickActionClicks = 0;
+	private int agitatorQuickActionClickTick = -1;
+	private int alembicQuickActionClickTick = -1;
 
 	/**
 	 * Whether the player's last click went to the Agitator or Alembic. Clicking anything else stops the work, so the
@@ -887,15 +889,29 @@ public class MasteringMixologyPlugin extends Plugin
 	}
 
 	/**
-	 * Uses up one of the station's quick-action clicks when a click on it gets through during the window.
+	 * Uses up the station's quick-action click for this tick when a click on it gets through during the window.
 	 */
 	private void recordQuickActionClick(AlchemyObject station)
 	{
 		if (station == AlchemyObject.AGITATOR && agitatorQuickActionTicks > 0 && agitatorQuickActionClicks > 0)
+		{
 			agitatorQuickActionClicks--;
+			agitatorQuickActionClickTick = client.getTickCount();
+		}
 
 		if (station == AlchemyObject.ALEMBIC && alembicQuickActionTicks > 0 && alembicQuickActionClicks > 0)
+		{
 			alembicQuickActionClicks--;
+			alembicQuickActionClickTick = client.getTickCount();
+		}
+	}
+
+	/**
+	 * Whether the quick-action window is up with a click left, and no click has gone through in it this tick yet.
+	 */
+	private boolean quickActionClickAllowed(int windowTicks, int clicksLeft, int lastClickTick)
+	{
+		return windowTicks > 0 && clicksLeft > 0 && lastClickTick != client.getTickCount();
 	}
 
 	/**
@@ -1004,20 +1020,22 @@ public class MasteringMixologyPlugin extends Plugin
 
 	/**
 	 * Consumes Agitator and Alembic clicks while the player works the station, except for its quick-action clicks:
-	 * two on the Agitator and one on the Alembic per quick-action window. A potion left in a station the player walked
-	 * away from does not count as running.
+	 * one per tick of the window, so one on the Alembic and two on the Agitator. A potion left in a station the player
+	 * walked away from does not count as running.
 	 */
 	private boolean isRunningLockBlocked(AlchemyObject station)
 	{
 		if (station == AlchemyObject.AGITATOR)
 			return StationGuard.runningLockBlocks(config.lockAgitatorWhileRunning(),
 					agitatorPotionType != null && agitatorOperated,
-					agitatorQuickActionTicks > 0 && agitatorQuickActionClicks > 0);
+					quickActionClickAllowed(agitatorQuickActionTicks, agitatorQuickActionClicks,
+							agitatorQuickActionClickTick));
 
 		if (station == AlchemyObject.ALEMBIC)
 			return StationGuard.runningLockBlocks(config.lockAlembicWhileRunning(),
 					alembicPotionType != null && alembicOperated,
-					alembicQuickActionTicks > 0 && alembicQuickActionClicks > 0);
+					quickActionClickAllowed(alembicQuickActionTicks, alembicQuickActionClicks,
+							alembicQuickActionClickTick));
 
 		return false;
 	}
@@ -1084,6 +1102,7 @@ public class MasteringMixologyPlugin extends Plugin
 		{
 			alembicQuickActionTicks = 1;
 			alembicQuickActionClicks = ALEMBIC_QUICK_ACTION_CLICKS;
+			alembicQuickActionClickTick = -1;
 			if (highlight)
 			{
 				highlightObject(AlchemyObject.ALEMBIC, config.stationQuickActionHighlightColor());
@@ -1100,6 +1119,7 @@ public class MasteringMixologyPlugin extends Plugin
 		{
 			agitatorQuickActionTicks = 1;
 			agitatorQuickActionClicks = AGITATOR_QUICK_ACTION_CLICKS;
+			agitatorQuickActionClickTick = -1;
 			if (highlight)
 				highlightObject(AlchemyObject.AGITATOR, config.stationQuickActionHighlightColor());
 		}

@@ -584,8 +584,8 @@ public interface MasteringMixologyConfig extends Config
 			section = MISCLICK_PROTECTION,
 			keyName = "lockAgitatorWhileRunning",
 			name = "Lock Agitator while running",
-			description = "Makes the Agitator unclickable while it is processing a potion, except for two clicks "
-					+ "when its quick action is up",
+			description = "Makes the Agitator unclickable while it is processing a potion, except for one click "
+					+ "per tick (two in total) when its quick action is up",
 			position = 6
 	)
 	default boolean lockAgitatorWhileRunning()

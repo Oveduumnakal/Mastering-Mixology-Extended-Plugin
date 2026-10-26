@@ -164,9 +164,11 @@ public class RunningStationLockTest
 		spotAnim(SpotanimID.VFX_MACHINERY_ALCHEMY01_AGITATOR01);
 		assertFalse(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
 
+		tick(1);
 		varbit(VarbitID.MM_AGITATOR_PROGRESS, 5);
 		assertFalse(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
 
+		tick(2);
 		varbit(VarbitID.MM_AGITATOR_PROGRESS, 6);
 		assertTrue(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
 	}
@@ -194,14 +196,18 @@ public class RunningStationLockTest
 		assertTrue(click("Alembic", AlchemyObject.ALEMBIC).isConsumed());
 	}
 
-	/** The Agitator's quick action lets two clicks through; a third click in the same window is consumed. */
+	/** The Agitator's two-tick quick action lets one click through per tick. */
 	@Test
-	public void agitatorQuickActionLetsTwoClicksThrough()
+	public void agitatorQuickActionLetsOneClickThroughPerTick()
 	{
 		start("Agitator", AlchemyObject.AGITATOR, VarbitID.MM_LAB_AGITATOR_POTION);
 		spotAnim(SpotanimID.VFX_MACHINERY_ALCHEMY01_AGITATOR01);
 
 		assertFalse(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
+		assertTrue(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
+
+		tick(1);
+		varbit(VarbitID.MM_AGITATOR_PROGRESS, 5);
 		assertFalse(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
 		assertTrue(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
 	}
@@ -213,8 +219,10 @@ public class RunningStationLockTest
 		start("Alembic", AlchemyObject.ALEMBIC, VarbitID.MM_LAB_ALEMBIC_POTION);
 		spotAnim(SpotanimID.VFX_MACHINERY_ALCHEMY01_ALEMBIC01);
 		click("Alembic", AlchemyObject.ALEMBIC);
+		tick(1);
 		varbit(VarbitID.MM_ALEMBIC_PROGRESS, 5);
 
+		tick(2);
 		spotAnim(SpotanimID.VFX_MACHINERY_ALCHEMY01_ALEMBIC01);
 		assertFalse(click("Alembic", AlchemyObject.ALEMBIC).isConsumed());
 	}
@@ -233,6 +241,11 @@ public class RunningStationLockTest
 	{
 		assertFalse(click(target, object).isConsumed());
 		varbit(potionVarbit, 1);
+	}
+
+	private void tick(int tickCount)
+	{
+		when(client.getTickCount()).thenReturn(tickCount);
 	}
 
 	private void walk()

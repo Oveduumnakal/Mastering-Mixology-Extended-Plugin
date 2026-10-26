@@ -39,8 +39,8 @@ The vessel and conveyor belt highlights are on by default; everything else in th
 
 - **Lock running stations**
 
-  Stop clicks on a running Agitator or Alembic, except for its quick-action clicks: one on the Alembic, two on the
-  Agitator.
+  Stop clicks on a running Agitator or Alembic, except for its quick-action clicks: one on the Alembic, and one per
+  tick of the Agitator's two-tick window.
 
 - **Cap Concentrate clicks**
 
