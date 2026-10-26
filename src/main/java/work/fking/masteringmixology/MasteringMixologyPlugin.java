@@ -613,6 +613,7 @@ public class MasteringMixologyPlugin extends Plugin
 				tryHighlightNextStation();
 				LOGGER.debug("Finished crystalising {}", alembicPotionType);
 				alembicPotionType = null;
+				alembicQuickActionTicks = 0;
 			}
 			else
 			{
@@ -629,6 +630,7 @@ public class MasteringMixologyPlugin extends Plugin
 				tryHighlightNextStation();
 				LOGGER.debug("Finished homogenising {}", agitatorPotionType);
 				agitatorPotionType = null;
+				agitatorQuickActionTicks = 0;
 			}
 			else
 			{
