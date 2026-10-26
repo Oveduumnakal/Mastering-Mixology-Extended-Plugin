@@ -27,6 +27,8 @@ Extended-fork releases; the other entries are inherited from upstream.
   Highlight section and the recommend colours are removed.
 * **Highlights** section now holds the highlight toggles, without the "Highlight" prefix: *Levers*, *Next lever
   only*, *Mixing vessel*, *Conveyor belt*, *Stations*, *Quick-action events* and *DigWeed*. Saved settings carry over.
+* **Resin bars always show** in the goal overlay while a reward is tracked; the *Show Resin Bars* setting is
+  removed.
 * **Hide orders panel** option (on by default): replaces the game's potion orders list with a plugin overlay.
 * **New defaults**: *Inventory Potion Tags* Colored, *Order sorting* Shortest Path, *Display resin amount*,
   *Next lever only* and *Wait for full order* on. Settings you already saved keep their values.

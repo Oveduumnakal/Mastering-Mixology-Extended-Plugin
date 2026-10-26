@@ -37,7 +37,6 @@ class GoalInfoBoxOverlay extends OverlayPanel
 	private static final Color PROGRESS_BAR_BACKGROUND_COLOR = new Color(61, 56, 49);
 
 	private final MasteringMixologyPlugin plugin;
-	private final MasteringMixologyConfig config;
 	private final ItemManager itemManager;
 	private final SpriteManager spriteManager;
 
@@ -53,14 +52,12 @@ class GoalInfoBoxOverlay extends OverlayPanel
 	@Inject
 	GoalInfoBoxOverlay(
 			MasteringMixologyPlugin plugin,
-			MasteringMixologyConfig config,
 			ItemManager itemManager,
 			SpriteManager spriteManager
 	)
 	{
 		super(plugin);
 		this.plugin = plugin;
-		this.config = config;
 		this.itemManager = itemManager;
 		this.spriteManager = spriteManager;
 
@@ -120,11 +117,8 @@ class GoalInfoBoxOverlay extends OverlayPanel
 		topPanel.getChildren().add(topInfoSplit);
 		panelComponent.getChildren().add(topPanel);
 
-		if (config.showResinBars())
-		{
-			for (var component : PotionComponent.ENTRIES)
-				createProgressBar(goal, component);
-		}
+		for (var component : PotionComponent.ENTRIES)
+			createProgressBar(goal, component);
 
 		return super.render(graphics);
 	}

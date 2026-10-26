@@ -491,8 +491,7 @@ public class MasteringMixologyPlugin extends Plugin
 			unHighlightObject(AlchemyObject.DIGWEED_NORTH_WEST);
 		}
 
-		if (event.getKey().equals("showResinBars") || event.getKey().startsWith("track")
-				|| event.getKey().endsWith("Quantity"))
+		if (event.getKey().startsWith("track") || event.getKey().endsWith("Quantity"))
 		{
 			recalculateGoalData();
 			previouslyAboveRewardThreshold = false;
