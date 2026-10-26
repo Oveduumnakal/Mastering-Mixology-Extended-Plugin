@@ -364,18 +364,6 @@ public interface MasteringMixologyConfig extends Config
 
 	@ConfigItem(
 			section = REWARD_TRACKING,
-			keyName = "showResinBars",
-			name = "Show Resin Bars",
-			description = "Toggle to display or hide the resin progress bars",
-			position = 2
-	)
-	default boolean showResinBars()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-			section = REWARD_TRACKING,
 			keyName = "trackPrescriptionGoggles",
 			name = "Prescription Goggles",
 			description = "Include Prescription Goggles in the tracked totals",
