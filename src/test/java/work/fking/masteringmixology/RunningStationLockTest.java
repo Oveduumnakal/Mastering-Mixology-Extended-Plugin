@@ -126,6 +126,26 @@ public class RunningStationLockTest
 		assertFalse(click("Alembic", AlchemyObject.ALEMBIC).isConsumed());
 	}
 
+	/** Interface clicks, such as minimising the chat box, do not stop a station, so the lock stays. */
+	@Test
+	public void interfaceClickKeepsTheLock()
+	{
+		start("Agitator", AlchemyObject.AGITATOR, VarbitID.MM_LAB_AGITATOR_POTION);
+		menuClick(MenuAction.CC_OP);
+
+		assertTrue(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
+	}
+
+	/** Clicking another object stops the station, like walking away. */
+	@Test
+	public void objectClickPausesTheStation()
+	{
+		start("Agitator", AlchemyObject.AGITATOR, VarbitID.MM_LAB_AGITATOR_POTION);
+		click("Mixing vessel", AlchemyObject.MIXING_VESSEL);
+
+		assertFalse(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
+	}
+
 	/** A blocked click does not count as working the clicked station or as clicking away. */
 	@Test
 	public void blockedClickKeepsTheLock()
@@ -181,8 +201,13 @@ public class RunningStationLockTest
 
 	private void walk()
 	{
+		menuClick(MenuAction.WALK);
+	}
+
+	private void menuClick(MenuAction action)
+	{
 		MenuEntry entry = mock(MenuEntry.class);
-		when(entry.getType()).thenReturn(MenuAction.WALK);
+		when(entry.getType()).thenReturn(action);
 		plugin.onMenuOptionClicked(new MenuOptionClicked(entry));
 	}
 

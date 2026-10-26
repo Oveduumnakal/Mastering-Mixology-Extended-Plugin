@@ -877,19 +877,28 @@ public class MasteringMixologyPlugin extends Plugin
 	}
 
 	/**
-	 * Remembers which station a let-through click went to. Any other click, except cancel or examine, stops the
-	 * Agitator and Alembic, so a paused station can be clicked again to resume.
+	 * Remembers which station a let-through click went to. A click on a tile or another object stops the Agitator and
+	 * Alembic, so a paused station can be clicked again to resume. Interface clicks, such as minimising the chat box,
+	 * do not stop a station and leave the lock as it is.
 	 */
 	private void recordOperatedStation(AlchemyObject station, MenuAction action)
 	{
-		if (action == MenuAction.CANCEL
-				|| action == MenuAction.EXAMINE_OBJECT
-				|| action == MenuAction.EXAMINE_NPC
-				|| action == MenuAction.EXAMINE_ITEM_GROUND)
+		if (!isTileOrObjectClick(action))
 			return;
 
 		agitatorOperated = station == AlchemyObject.AGITATOR;
 		alembicOperated = station == AlchemyObject.ALEMBIC;
+	}
+
+	private static boolean isTileOrObjectClick(MenuAction action)
+	{
+		return action == MenuAction.WALK
+				|| action == MenuAction.GAME_OBJECT_FIRST_OPTION
+				|| action == MenuAction.GAME_OBJECT_SECOND_OPTION
+				|| action == MenuAction.GAME_OBJECT_THIRD_OPTION
+				|| action == MenuAction.GAME_OBJECT_FOURTH_OPTION
+				|| action == MenuAction.GAME_OBJECT_FIFTH_OPTION
+				|| action == MenuAction.WIDGET_TARGET_ON_GAME_OBJECT;
 	}
 
 	private boolean isLeverBlocked(int objectId)
