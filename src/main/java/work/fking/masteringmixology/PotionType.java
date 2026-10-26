@@ -151,8 +151,8 @@ public enum PotionType
 	}
 
 	/**
-	 * Returns the potion's name split into the three parts that stand for its three components, in recipe order. The
-	 * first letter of each part is the component's letter, so joining the parts gives the name.
+	 * Returns the potion's name split into the three parts that stand for its three components, in recipe order.
+	 * Joining the parts gives the name. Each part starts with its component's letter, except in Mixalot ("ot").
 	 */
 	public String[] nameParts()
 	{

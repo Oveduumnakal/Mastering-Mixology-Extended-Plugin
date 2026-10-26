@@ -141,4 +141,47 @@ public class MixGuidanceTest
 		assertTrue(MixGuidance.readyToDeliver(orders, Set.of(0, 1), counts(MIXALOT, MIXALOT)));
 		assertFalse(MixGuidance.readyToDeliver(orders, Set.of(0, 1), counts(MIXALOT)));
 	}
+
+	@Test
+	public void slotValuesOutsideOneToThreeAreNoComponent()
+	{
+		assertNull(MixGuidance.componentFromSlotValue(0));
+		assertNull(MixGuidance.componentFromSlotValue(4));
+		assertSame(MOX, MixGuidance.componentFromSlotValue(M));
+		assertSame(LYE, MixGuidance.componentFromSlotValue(L));
+	}
+
+	@Test
+	public void vesselEmptyOnlyWithNoPasteAndNoReadyPotion()
+	{
+		assertTrue(MixGuidance.vesselEmpty(new int[]{EMPTY, EMPTY, EMPTY}, 0));
+		assertFalse(MixGuidance.vesselEmpty(new int[]{M, EMPTY, EMPTY}, 0));
+		assertFalse(MixGuidance.vesselEmpty(new int[]{EMPTY, EMPTY, EMPTY}, 1));
+	}
+
+	/** More pending pulls than empty slots: the extra pulls are dropped, the vessel just reads full. */
+	@Test
+	public void pendingPullsBeyondTheEmptySlotsAreDropped()
+	{
+		int[] slots = MixGuidance.withPendingPulls(new int[]{M, A, EMPTY}, List.of(LYE, LYE, MOX));
+
+		assertEquals(L, slots[2]);
+		assertTrue(MixGuidance.vesselFull(slots, 0));
+	}
+
+	/** An empty recommendation set means nothing is recommended, so every order is part of the plan. */
+	@Test
+	public void emptyRecommendationPlansEveryOrder()
+	{
+		assertTrue(MixGuidance.planned(order(2, MIXALOT), Set.of()));
+		assertTrue(MixGuidance.planned(order(2, MIXALOT), null));
+		assertFalse(MixGuidance.planned(order(2, MIXALOT), Set.of(0)));
+	}
+
+	@Test
+	public void vesselPotionPrefersTheReadyPotion()
+	{
+		assertSame(AQUALUX_AMALGAM, MixGuidance.vesselPotion(new int[]{M, M, M}, AQUALUX_AMALGAM.ordinal() + 1));
+		assertNull(MixGuidance.vesselPotion(new int[]{M, EMPTY, EMPTY}, 0));
+	}
 }
