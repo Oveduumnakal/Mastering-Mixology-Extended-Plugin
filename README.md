@@ -1,4 +1,6 @@
-<h1 align="center">Mastering Mixology Extended</h1>
+<p align="center">
+  <img src="docs/img/00-banner.jpg" alt="Mastering Mixology Extended" width="100%">
+</p>
 
 Mastering Mixology Extended is a RuneLite plugin for the Mastering Mixology minigame. It tracks the rewards you are
 saving resin for, tells you which orders are worth brewing, walks you through mixing them, and can block the clicks
