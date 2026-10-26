@@ -76,6 +76,8 @@ public class MasteringMixologyPlugin extends Plugin
 	private static final int PROC_MASTERING_MIXOLOGY_BUILD_REAGENTS = 7064;
 
 	private static final int VARBIT_POTION_ORDER_1 = VarbitID.MM_LAB_ORDER_1_TYPE;
+	static final int AGITATOR_QUICK_ACTION_CLICKS = 2;
+	static final int ALEMBIC_QUICK_ACTION_CLICKS = 1;
 	private static final int VARBIT_POTION_MODIFIER_1 = VarbitID.MM_LAB_ORDER_1_MODIFIER;
 	private static final int VARBIT_POTION_ORDER_2 = VarbitID.MM_LAB_ORDER_2_TYPE;
 	private static final int VARBIT_POTION_MODIFIER_2 = VarbitID.MM_LAB_ORDER_2_MODIFIER;
@@ -174,6 +176,13 @@ public class MasteringMixologyPlugin extends Plugin
 
 	private int agitatorQuickActionTicks = 0;
 	private int alembicQuickActionTicks = 0;
+
+	/**
+	 * Clicks the running lock still lets through in the current quick-action window: two on the Agitator and one on
+	 * the Alembic per window, so spam clicks are consumed.
+	 */
+	private int agitatorQuickActionClicks = 0;
+	private int alembicQuickActionClicks = 0;
 
 	/**
 	 * Whether the player's last click went to the Agitator or Alembic. Clicking anything else stops the work, so the
@@ -873,7 +882,20 @@ public class MasteringMixologyPlugin extends Plugin
 			return;
 		}
 
+		recordQuickActionClick(station);
 		recordOperatedStation(station, action);
+	}
+
+	/**
+	 * Uses up one of the station's quick-action clicks when a click on it gets through during the window.
+	 */
+	private void recordQuickActionClick(AlchemyObject station)
+	{
+		if (station == AlchemyObject.AGITATOR && agitatorQuickActionTicks > 0 && agitatorQuickActionClicks > 0)
+			agitatorQuickActionClicks--;
+
+		if (station == AlchemyObject.ALEMBIC && alembicQuickActionTicks > 0 && alembicQuickActionClicks > 0)
+			alembicQuickActionClicks--;
 	}
 
 	/**
@@ -981,18 +1003,21 @@ public class MasteringMixologyPlugin extends Plugin
 	}
 
 	/**
-	 * Consumes Agitator and Alembic clicks while the player works the station, except during its quick-action window.
-	 * A potion left in a station the player walked away from does not count as running.
+	 * Consumes Agitator and Alembic clicks while the player works the station, except for its quick-action clicks:
+	 * two on the Agitator and one on the Alembic per quick-action window. A potion left in a station the player walked
+	 * away from does not count as running.
 	 */
 	private boolean isRunningLockBlocked(AlchemyObject station)
 	{
 		if (station == AlchemyObject.AGITATOR)
 			return StationGuard.runningLockBlocks(config.lockAgitatorWhileRunning(),
-					agitatorPotionType != null && agitatorOperated, agitatorQuickActionTicks > 0);
+					agitatorPotionType != null && agitatorOperated,
+					agitatorQuickActionTicks > 0 && agitatorQuickActionClicks > 0);
 
 		if (station == AlchemyObject.ALEMBIC)
 			return StationGuard.runningLockBlocks(config.lockAlembicWhileRunning(),
-					alembicPotionType != null && alembicOperated, alembicQuickActionTicks > 0);
+					alembicPotionType != null && alembicOperated,
+					alembicQuickActionTicks > 0 && alembicQuickActionClicks > 0);
 
 		return false;
 	}
@@ -1046,7 +1071,8 @@ public class MasteringMixologyPlugin extends Plugin
 	 *
 	 * <p>The Alembic's quick action has a window of one tick and the Agitator's a window of two, so a counter goes
 	 * 0, 1 (and 2 for the Agitator) and the window closes on that station's next progress update. The window is
-	 * tracked even with the highlight off, because the running-station locks let clicks through during it.
+	 * tracked even with the highlight off, because the running-station locks let a set number of clicks through
+	 * during it.
 	 */
 	@Subscribe
 	public void onGraphicsObjectCreated(GraphicsObjectCreated event)
@@ -1057,6 +1083,7 @@ public class MasteringMixologyPlugin extends Plugin
 		if (spotAnimId == SPOT_ANIM_ALEMBIC && alembicPotionType != null)
 		{
 			alembicQuickActionTicks = 1;
+			alembicQuickActionClicks = ALEMBIC_QUICK_ACTION_CLICKS;
 			if (highlight)
 			{
 				highlightObject(AlchemyObject.ALEMBIC, config.stationQuickActionHighlightColor());
@@ -1072,6 +1099,7 @@ public class MasteringMixologyPlugin extends Plugin
 		if (spotAnimId == SPOT_ANIM_AGITATOR && agitatorPotionType != null)
 		{
 			agitatorQuickActionTicks = 1;
+			agitatorQuickActionClicks = AGITATOR_QUICK_ACTION_CLICKS;
 			if (highlight)
 				highlightObject(AlchemyObject.AGITATOR, config.stationQuickActionHighlightColor());
 		}

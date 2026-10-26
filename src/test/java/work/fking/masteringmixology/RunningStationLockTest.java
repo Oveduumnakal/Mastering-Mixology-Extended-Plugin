@@ -183,6 +183,42 @@ public class RunningStationLockTest
 		assertTrue(click("Alembic", AlchemyObject.ALEMBIC).isConsumed());
 	}
 
+	/** The Alembic's quick action lets one click through; a second click in the same window is consumed. */
+	@Test
+	public void alembicQuickActionLetsOneClickThrough()
+	{
+		start("Alembic", AlchemyObject.ALEMBIC, VarbitID.MM_LAB_ALEMBIC_POTION);
+		spotAnim(SpotanimID.VFX_MACHINERY_ALCHEMY01_ALEMBIC01);
+
+		assertFalse(click("Alembic", AlchemyObject.ALEMBIC).isConsumed());
+		assertTrue(click("Alembic", AlchemyObject.ALEMBIC).isConsumed());
+	}
+
+	/** The Agitator's quick action lets two clicks through; a third click in the same window is consumed. */
+	@Test
+	public void agitatorQuickActionLetsTwoClicksThrough()
+	{
+		start("Agitator", AlchemyObject.AGITATOR, VarbitID.MM_LAB_AGITATOR_POTION);
+		spotAnim(SpotanimID.VFX_MACHINERY_ALCHEMY01_AGITATOR01);
+
+		assertFalse(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
+		assertFalse(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
+		assertTrue(click("Agitator", AlchemyObject.AGITATOR).isConsumed());
+	}
+
+	/** Each new quick action gives the station its clicks again. */
+	@Test
+	public void nextQuickActionRestoresTheClicks()
+	{
+		start("Alembic", AlchemyObject.ALEMBIC, VarbitID.MM_LAB_ALEMBIC_POTION);
+		spotAnim(SpotanimID.VFX_MACHINERY_ALCHEMY01_ALEMBIC01);
+		click("Alembic", AlchemyObject.ALEMBIC);
+		varbit(VarbitID.MM_ALEMBIC_PROGRESS, 5);
+
+		spotAnim(SpotanimID.VFX_MACHINERY_ALCHEMY01_ALEMBIC01);
+		assertFalse(click("Alembic", AlchemyObject.ALEMBIC).isConsumed());
+	}
+
 	@Test
 	public void lockOffLetsRunningStationClicksThrough()
 	{
