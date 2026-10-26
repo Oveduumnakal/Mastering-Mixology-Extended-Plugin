@@ -39,8 +39,8 @@ The vessel and conveyor belt highlights are on by default; everything else in th
 
 - **Cap Concentrate clicks**
 
-  Stop Retort clicks once one more would complete the potion, so spare clicks cannot load the next potion. It adapts to
-  higher Herblore levels by itself.
+  Stop Retort clicks on the last tick, when passive fill completes the potion anyway, so spare clicks cannot load the
+  next potion.
 
 All of these are off by default.
 

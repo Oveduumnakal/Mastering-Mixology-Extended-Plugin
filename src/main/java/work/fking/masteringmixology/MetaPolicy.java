@@ -1,7 +1,6 @@
 package work.fking.masteringmixology;
 
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -45,11 +44,6 @@ public class MetaPolicy implements RecommendationPolicy
 	public void reset()
 	{
 		state = State.SINGLE_BN;
-	}
-
-	public State currentState()
-	{
-		return state;
 	}
 
 	/**
@@ -222,14 +216,7 @@ public class MetaPolicy implements RecommendationPolicy
 
 	private static boolean isMultiResin(PotionType pt)
 	{
-		if (pt == null)
-			return false;
-
-		EnumSet<PotionComponent> uniq = EnumSet.noneOf(PotionComponent.class);
-		for (PotionComponent c : pt.components())
-			uniq.add(c);
-
-		return uniq.size() >= 2;
+		return pt != null && pt.colourCount() >= 2;
 	}
 
 	private static boolean allMultiResin(PotionType[] orders)
@@ -245,14 +232,7 @@ public class MetaPolicy implements RecommendationPolicy
 
 	private static boolean isMal(PotionType pt)
 	{
-		if (pt == null)
-			return false;
-
-		EnumSet<PotionComponent> uniq = EnumSet.noneOf(PotionComponent.class);
-		for (PotionComponent c : pt.components())
-			uniq.add(c);
-
-		return uniq.size() == 3;
+		return pt != null && pt.colourCount() == 3;
 	}
 
 	private static boolean anyMal(PotionType[] orders)
@@ -267,39 +247,17 @@ public class MetaPolicy implements RecommendationPolicy
 	}
 
 	/**
-	 * Deficit-reduction score for a slot: sum over colours of
-	 * resin_in_color * max(deficit_color, 0). Resin yield per potion:
-	 * <ul>
-	 * <li>XXX (single component repeated 3x): 20 of X</li>
-	 * <li>XXY (one component doubled, one single): 20 of doubled + 10 of single</li>
-	 * <li>XYZ (three distinct components = MAL): 20 of each</li>
-	 * </ul>
+	 * Deficit-reduction score for a slot: the sum over colours of the potion's resin yield times the colour's
+	 * deficit (see {@link PotionType#resinYield(int)}).
 	 */
 	private static int slotScore(PotionType pt, int[] deficit)
 	{
 		if (pt == null)
 			return Integer.MIN_VALUE;
 
-		int[] count = new int[3];
-		for (PotionComponent c : pt.components())
-			count[c.ordinal()]++;
-
-		int distinct = 0;
-		for (int c = 0; c < 3; c++)
-		{
-			if (count[c] > 0)
-				distinct++;
-		}
-
 		int score = 0;
 		for (int c = 0; c < 3; c++)
-		{
-			if (count[c] == 0)
-				continue;
-
-			int yield = (count[c] == 1 && distinct == 2) ? 10 : 20;
-			score += yield * Math.max(deficit[c], 0);
-		}
+			score += pt.resinYield(c) * Math.max(deficit[c], 0);
 
 		return score;
 	}

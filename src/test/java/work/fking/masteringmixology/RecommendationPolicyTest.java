@@ -29,6 +29,14 @@ public class RecommendationPolicyTest
 	}
 
 	@Test
+	public void colourCountIsTheNumberOfDifferentPastes()
+	{
+		assertEquals(1, MAMMOTH_MIGHT_MIX.colourCount());
+		assertEquals(2, MYSTIC_MANA_AMALGAM.colourCount());
+		assertEquals(3, MIXALOT.colourCount());
+	}
+
+	@Test
 	public void orderWeightsMatchTheWiki()
 	{
 		assertEquals(5, LIPLACK_LIQUOR.orderWeight());
