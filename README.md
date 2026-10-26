@@ -48,7 +48,8 @@ All of these are off by default.
 
 - **Track several rewards at once**
 
-  Tick any of the rewards you are saving for, with quantities for the potion packs, Aldarium and the Chugging Barrel.
+  Tick any of the rewards you are saving for. The potion packs, Aldarium and the Chugging Barrel take a quantity
+  instead; 0 leaves them out.
   The overlay shows how far each resin colour is from the combined cost.
 
 - **Know when you can afford it**

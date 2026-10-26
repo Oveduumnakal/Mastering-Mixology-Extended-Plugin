@@ -368,127 +368,67 @@ public interface MasteringMixologyConfig extends Config
 
 	@ConfigItem(
 			section = REWARD_TRACKING,
-			keyName = "trackChuggingBarrel",
-			name = "Chugging Barrel",
-			description = "Include Chugging Barrel(s) in the tracked totals",
+			keyName = "chuggingBarrelQuantity",
+			name = "Chugging Barrel qty",
+			description = "How many Chugging Barrels to include in the tracked totals; 0 leaves them out",
 			position = 10
 	)
-	default boolean trackChuggingBarrel()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-			section = REWARD_TRACKING,
-			keyName = "chuggingBarrelQuantity",
-			name = "  Chugging Barrel qty",
-			description = "How many Chugging Barrels to include when ticked",
-			position = 11
-	)
-	@Range(min = 1, max = 100000)
+	@Range(min = 0, max = 100000)
 	default int chuggingBarrelQuantity()
 	{
-		return 1;
-	}
-
-	@ConfigItem(
-			section = REWARD_TRACKING,
-			keyName = "trackApprenticePack",
-			name = "Apprentice Potion Pack",
-			description = "Include Apprentice Potion Pack(s) in the tracked totals",
-			position = 12
-	)
-	default boolean trackApprenticePack()
-	{
-		return false;
+		return 0;
 	}
 
 	@ConfigItem(
 			section = REWARD_TRACKING,
 			keyName = "apprenticePackQuantity",
-			name = "  Apprentice Pack qty",
-			description = "How many Apprentice Potion Packs to include when ticked",
-			position = 13
+			name = "Apprentice Pack qty",
+			description = "How many Apprentice Potion Packs to include in the tracked totals; 0 leaves them out",
+			position = 11
 	)
-	@Range(min = 1, max = 100000)
+	@Range(min = 0, max = 100000)
 	default int apprenticePackQuantity()
 	{
-		return 1;
-	}
-
-	@ConfigItem(
-			section = REWARD_TRACKING,
-			keyName = "trackAdeptPack",
-			name = "Adept Potion Pack",
-			description = "Include Adept Potion Pack(s) in the tracked totals",
-			position = 14
-	)
-	default boolean trackAdeptPack()
-	{
-		return false;
+		return 0;
 	}
 
 	@ConfigItem(
 			section = REWARD_TRACKING,
 			keyName = "adeptPackQuantity",
-			name = "  Adept Pack qty",
-			description = "How many Adept Potion Packs to include when ticked",
-			position = 15
+			name = "Adept Pack qty",
+			description = "How many Adept Potion Packs to include in the tracked totals; 0 leaves them out",
+			position = 12
 	)
-	@Range(min = 1, max = 100000)
+	@Range(min = 0, max = 100000)
 	default int adeptPackQuantity()
 	{
-		return 1;
-	}
-
-	@ConfigItem(
-			section = REWARD_TRACKING,
-			keyName = "trackExpertPack",
-			name = "Expert Potion Pack",
-			description = "Include Expert Potion Pack(s) in the tracked totals",
-			position = 16
-	)
-	default boolean trackExpertPack()
-	{
-		return false;
+		return 0;
 	}
 
 	@ConfigItem(
 			section = REWARD_TRACKING,
 			keyName = "expertPackQuantity",
-			name = "  Expert Pack qty",
-			description = "How many Expert Potion Packs to include when ticked",
-			position = 17
+			name = "Expert Pack qty",
+			description = "How many Expert Potion Packs to include in the tracked totals; 0 leaves them out",
+			position = 13
 	)
-	@Range(min = 1, max = 100000)
+	@Range(min = 0, max = 100000)
 	default int expertPackQuantity()
 	{
-		return 1;
-	}
-
-	@ConfigItem(
-			section = REWARD_TRACKING,
-			keyName = "trackAldarium",
-			name = "Aldarium",
-			description = "Include Aldarium in the tracked totals",
-			position = 18
-	)
-	default boolean trackAldarium()
-	{
-		return false;
+		return 0;
 	}
 
 	@ConfigItem(
 			section = REWARD_TRACKING,
 			keyName = "aldariumQuantity",
-			name = "  Aldarium qty",
-			description = "How many Aldarium to include when ticked",
-			position = 19
+			name = "Aldarium qty",
+			description = "How many Aldarium to include in the tracked totals; 0 leaves them out",
+			position = 14
 	)
-	@Range(min = 1, max = 100000)
+	@Range(min = 0, max = 100000)
 	default int aldariumQuantity()
 	{
-		return 1;
+		return 0;
 	}
 
 	@ConfigSection(

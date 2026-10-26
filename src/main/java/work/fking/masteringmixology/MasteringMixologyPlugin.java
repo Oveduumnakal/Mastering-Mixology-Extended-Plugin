@@ -136,6 +136,9 @@ public class MasteringMixologyPlugin extends Plugin
 	private MasteringMixologyConfig config;
 
 	@Inject
+	private ConfigManager configManager;
+
+	@Inject
 	private OverlayManager overlayManager;
 
 	@Inject
@@ -281,6 +284,7 @@ public class MasteringMixologyPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
+		RewardQuantityMigration.migrate(configManager);
 		overlayManager.add(overlay);
 		overlayManager.add(potionOverlay);
 		overlayManager.add(goalInfoBoxOverlay);
