@@ -37,10 +37,14 @@ The vessel and conveyor belt highlights are on by default; everything else in th
   Stop clicks on the Alembic, Agitator or Retort when the station is empty and no order needs it with the potion you are
   holding.
 
+- **Lock running stations**
+
+  Stop clicks on a running Agitator or Alembic, except while its quick action is up.
+
 - **Cap Concentrate clicks**
 
-  Stop Retort clicks once one more would complete the potion, so spare clicks cannot load the next potion. It adapts to
-  higher Herblore levels by itself.
+  Stop Retort clicks on the last tick, when passive fill completes the potion anyway, so spare clicks cannot load the
+  next potion.
 
 All of these are off by default.
 
@@ -48,7 +52,8 @@ All of these are off by default.
 
 - **Track several rewards at once**
 
-  Tick any of the rewards you are saving for, with quantities for the potion packs, Aldarium and the Chugging Barrel.
+  Tick any of the rewards you are saving for. The potion packs, Aldarium and the Chugging Barrel take a quantity
+  instead; 0 leaves them out.
   The overlay shows how far each resin colour is from the combined cost.
 
 - **Know when you can afford it**
