@@ -1584,10 +1584,14 @@ public class MasteringMixologyPlugin extends Plugin
 
 	/**
 	 * Queues a fake change of the potion order varbit, which makes the client script that builds the order list run
-	 * again.
+	 * again. Does nothing before login: the client has no varp state to queue against yet, and the order list is built
+	 * when its widget loads.
 	 */
 	public void triggerPotionOrderUpdate()
 	{
+		if (client.getGameState() != GameState.LOGGED_IN)
+			return;
+
 		var varbitType = client.getVarbit(VARBIT_POTION_ORDER_1);
 
 		if (varbitType != null)
