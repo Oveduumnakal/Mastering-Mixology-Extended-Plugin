@@ -12,9 +12,9 @@ import java.awt.Color;
 public enum ColorblindMode
 {
 	OFF("Off", null, null, null),
-	PROTANOPIA("Protanopia (red-blind)", new Color(0x3984FF), new Color(0xF0E442), new Color(0xD55E00)),
-	DEUTERANOPIA("Deuteranopia (green-blind)", new Color(0x3984FF), new Color(0xF0E442), new Color(0xFF8FD8)),
-	TRITANOPIA("Tritanopia (blue-blind)", new Color(0x22D3EE), new Color(0xFF8FD8), new Color(0xFF0000));
+	PROTANOPIA("Protanopia", new Color(0x3984FF), new Color(0xF0E442), new Color(0xD55E00)),
+	DEUTERANOPIA("Deuteranopia", new Color(0x3984FF), new Color(0xF0E442), new Color(0xFF8FD8)),
+	TRITANOPIA("Tritanopia", new Color(0x22D3EE), new Color(0xFF8FD8), new Color(0xFF0000));
 
 	private final String name;
 	private final Color mox;
