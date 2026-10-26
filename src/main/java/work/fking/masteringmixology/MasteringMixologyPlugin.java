@@ -711,6 +711,7 @@ public class MasteringMixologyPlugin extends Plugin
 		else if (varbitId == VarbitID.MM_RETORT_PROGRESS)
 		{
 			retortProgressTracker.onProgressChanged(value);
+			updateRetortQuickActionHighlight();
 		}
 		else if (varbitId == VARBIT_AGITATOR_QUICKACTION)
 		{
@@ -1236,6 +1237,22 @@ public class MasteringMixologyPlugin extends Plugin
 			highlightedObjects.put(alchemyObject,
 					new HighlightedObject(decorativeObject, color, config.highlightBorderWidth(),
 							config.highlightFeather()));
+	}
+
+	/**
+	 * Draws the Retort in the quick-action colour while Concentrate clicks still finish the potion sooner, and back in
+	 * the station colour from the last tick on.
+	 */
+	private void updateRetortQuickActionHighlight()
+	{
+		if (!config.highlightQuickActionEvents() || !retortProgressTracker.potionLoaded())
+			return;
+
+		int progress = retortProgressTracker.currentProgress();
+		if (StationGuard.concentrateWorthClicking(progress, StationGuard.RETORT_PROGRESS_MAX))
+			highlightObject(AlchemyObject.RETORT, config.stationQuickActionHighlightColor());
+		else if (progress > 0)
+			resetStationHighlight(AlchemyObject.RETORT);
 	}
 
 	public void resetStationHighlight(AlchemyObject alchemyObject)

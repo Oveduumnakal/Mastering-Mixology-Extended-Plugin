@@ -64,4 +64,13 @@ final class StationGuard
 	{
 		return currentProgress >= maxProgress - 1;
 	}
+
+	/**
+	 * Whether the Retort is running and a Concentrate click still finishes it sooner: from the first progress up to,
+	 * but not including, the last tick.
+	 */
+	static boolean concentrateWorthClicking(int currentProgress, int maxProgress)
+	{
+		return currentProgress > 0 && !concentrateCapReached(currentProgress, maxProgress);
+	}
 }
