@@ -1,6 +1,6 @@
 package work.fking.masteringmixology;
 
-/** The rule set the "Highlight recommended potions" option uses to colour orders brew or skip. */
+/** The rule set that marks each order brew or skip; skipped orders are drawn in the skip colour. */
 public enum RecommendationStrategy
 {
 	EXPECTED_VALUE("Expected value"),

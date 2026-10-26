@@ -6,6 +6,11 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
+import java.util.function.UnaryOperator;
 import javax.inject.Inject;
 
 import net.runelite.api.gameval.ItemID;
@@ -15,6 +20,7 @@ import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.ComponentConstants;
+import net.runelite.client.util.AsyncBufferedImage;
 import net.runelite.client.util.ImageUtil;
 
 /**
@@ -44,6 +50,18 @@ public class OrdersPanelOverlay extends Overlay
 	private final MasteringMixologyConfig config;
 	private final SpriteManager spriteManager;
 	private final ItemManager itemManager;
+
+	/** Scaled station icons, keyed by the game's sprite, so each is resized once instead of every frame. */
+	private final Map<BufferedImage, BufferedImage> scaledStationIcons =
+			Collections.synchronizedMap(new WeakHashMap<>());
+
+	/** Scaled paste and resin icons, keyed by the source image. */
+	private final Map<BufferedImage, BufferedImage> scaledAmountIcons =
+			Collections.synchronizedMap(new WeakHashMap<>());
+
+	/** Item images whose loading is watched, so a copy scaled before the image loaded is dropped once it has. */
+	private final Set<BufferedImage> watchedImages = Collections.newSetFromMap(
+			Collections.synchronizedMap(new WeakHashMap<>()));
 
 	@Inject
 	OrdersPanelOverlay(MasteringMixologyPlugin plugin, MasteringMixologyConfig config, SpriteManager spriteManager,
@@ -154,7 +172,9 @@ public class OrdersPanelOverlay extends Overlay
 		if (sprite == null || sprite.getHeight() <= ICON_SIZE)
 			return sprite;
 
-		return ImageUtil.resizeImage(sprite, sprite.getWidth() * ICON_SIZE / sprite.getHeight(), ICON_SIZE, true);
+		return scaled(scaledStationIcons, sprite,
+				image -> ImageUtil.resizeImage(image, image.getWidth() * ICON_SIZE / image.getHeight(), ICON_SIZE,
+						true));
 	}
 
 	/** Draws the mox, aga and lye amounts as an icon and the amount, each in its component's colour. */
@@ -196,16 +216,36 @@ public class OrdersPanelOverlay extends Overlay
 		if (image == null || image.getHeight() <= AMOUNT_ICON_SIZE)
 			return image;
 
-		return ImageUtil.resizeImage(image, AMOUNT_ICON_SIZE, AMOUNT_ICON_SIZE, true);
+		return scaled(scaledAmountIcons, image,
+				source -> ImageUtil.resizeImage(source, AMOUNT_ICON_SIZE, AMOUNT_ICON_SIZE, true));
+	}
+
+	/**
+	 * Returns the cached scaled copy of an image, scaling it on first use. An item image that is still loading is
+	 * scaled blank, so its copy is dropped when it finishes loading and scaled again on the next frame.
+	 */
+	private BufferedImage scaled(Map<BufferedImage, BufferedImage> cache, BufferedImage source,
+			UnaryOperator<BufferedImage> resize)
+	{
+		var cached = cache.get(source);
+		if (cached != null)
+			return cached;
+
+		var result = resize.apply(source);
+		cache.put(source, result);
+		if (source instanceof AsyncBufferedImage && watchedImages.add(source))
+			((AsyncBufferedImage) source).onLoaded(() -> cache.remove(source));
+
+		return result;
 	}
 
 	private Color skipColor()
 	{
-		return config.accessibilityMode() ? config.accessibilitySkipColor() : config.notRecommendedPotionColor();
+		return config.skipColor();
 	}
 
 	/**
-	 * Draws the three resin letters, or three colour blocks in accessibility mode. A skipped order is drawn all in the
+	 * Draws three colour blocks, or the three resin letters with Use Letters on. A skipped order is drawn all in the
 	 * skip colour.
 	 */
 	private void drawRecipe(Graphics2D graphics, PotionType potionType, int x, int baseline, boolean skipped)
@@ -216,7 +256,7 @@ public class OrdersPanelOverlay extends Overlay
 		{
 			var color = skipped ? skipColor() : plugin.effectiveComponentColor(component);
 
-			if (config.accessibilityMode())
+			if (!config.useLetters())
 			{
 				graphics.setColor(color);
 				graphics.fillRect(x, baseline - BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);

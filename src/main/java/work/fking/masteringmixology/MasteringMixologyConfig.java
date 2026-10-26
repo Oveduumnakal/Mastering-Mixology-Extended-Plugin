@@ -18,6 +18,122 @@ public interface MasteringMixologyConfig extends Config
 	String CONFIG_GROUP = "masteringmixology";
 
 	@ConfigSection(
+			name = "Colors",
+			description = "Recipe style and the colours used for pastes, skipped orders and highlights",
+			position = 9
+	)
+	String COLORS = "Colors";
+
+	@ConfigItem(
+			section = COLORS,
+			keyName = "useLetters",
+			name = "Use Letters",
+			description = "Show recipes as M/A/L letters instead of coloured blocks",
+			position = 1
+	)
+	default boolean useLetters()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+			section = COLORS,
+			keyName = "colorblindMode",
+			name = "Colorblind mode",
+			description = "Preset Mox, Aga and Lye colours that stay distinct for the chosen colour blindness. "
+					+ "Off uses the Mox, Aga and Lye colours below",
+			position = 2
+	)
+	default ColorblindMode colorblindMode()
+	{
+		return ColorblindMode.OFF;
+	}
+
+	@ConfigItem(
+			section = COLORS,
+			keyName = "stationHighlightColor",
+			name = "Station color",
+			description = "Configures the default station highlight color",
+			position = 3
+	)
+	default Color stationHighlightColor()
+	{
+		return Color.MAGENTA;
+	}
+
+	@ConfigItem(
+			section = COLORS,
+			keyName = "stationQuickActionHighlightColor",
+			name = "Quick-action color",
+			description = "Configures the station quick-action highlight color",
+			position = 4
+	)
+	default Color stationQuickActionHighlightColor()
+	{
+		return Color.GREEN;
+	}
+
+	@ConfigItem(
+			section = COLORS,
+			keyName = "digweedHighlightColor",
+			name = "DigWeed color",
+			description = "Configures the digweed highlight color",
+			position = 5
+	)
+	default Color digweedHighlightColor()
+	{
+		return Color.GREEN;
+	}
+
+	@ConfigItem(
+			section = COLORS,
+			keyName = "accessibilitySkipColor",
+			name = "Skip color",
+			description = "Colour for orders the strategy says you should skip (reroll)",
+			position = 6
+	)
+	default Color skipColor()
+	{
+		return new Color(0x4A4A4A);
+	}
+
+	@ConfigItem(
+			section = COLORS,
+			keyName = "accessibilityMoxColor",
+			name = "Mox color",
+			description = "Colour for Mox (recipe, potion names, lever, progress bar) while Colorblind mode is Off",
+			position = 7
+	)
+	default Color moxColor()
+	{
+		return new Color(0x3984FF);
+	}
+
+	@ConfigItem(
+			section = COLORS,
+			keyName = "accessibilityAgaColor",
+			name = "Aga color",
+			description = "Colour for Aga (recipe, potion names, lever, progress bar) while Colorblind mode is Off",
+			position = 8
+	)
+	default Color agaColor()
+	{
+		return new Color(0x6BFF76);
+	}
+
+	@ConfigItem(
+			section = COLORS,
+			keyName = "accessibilityLyeColor",
+			name = "Lye color",
+			description = "Colour for Lye (recipe, potion names, lever, progress bar) while Colorblind mode is Off",
+			position = 9
+	)
+	default Color lyeColor()
+	{
+		return new Color(0xFF0000);
+	}
+
+	@ConfigSection(
 			name = "Highlights",
 			description = "Highlighting related configuration",
 			position = 10
@@ -45,7 +161,7 @@ public interface MasteringMixologyConfig extends Config
 	)
 	default InventoryPotionTagType inventoryPotionTagType()
 	{
-		return InventoryPotionTagType.WHITE;
+		return InventoryPotionTagType.COLORED;
 	}
 
 	@ConfigItem(
@@ -56,7 +172,7 @@ public interface MasteringMixologyConfig extends Config
 	)
 	default PotionOrderSorting potionOrderSorting()
 	{
-		return PotionOrderSorting.VANILLA;
+		return PotionOrderSorting.SHORTEST_PATH;
 	}
 
 	@ConfigItem(
@@ -68,14 +184,15 @@ public interface MasteringMixologyConfig extends Config
 	)
 	default boolean hideOrdersPanel()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigItem(
+			section = HIGHLIGHTS,
 			keyName = "highlightLevers",
-			name = "Highlight levers",
+			name = "Levers",
 			description = "Highlight levers",
-			position = 2
+			position = 0
 	)
 	default boolean highlightLevers()
 	{
@@ -83,20 +200,22 @@ public interface MasteringMixologyConfig extends Config
 	}
 
 	@ConfigItem(
+			section = HIGHLIGHTS,
 			keyName = "highlightNextLeverOnly",
-			name = "Highlight next lever only",
+			name = "Next lever only",
 			description = "Only highlight the next lever to pull for the order you're mixing, instead of all three "
 					+ "levers",
-			position = 2
+			position = 1
 	)
 	default boolean highlightNextLeverOnly()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigItem(
+			section = HIGHLIGHTS,
 			keyName = "highlightMixingVessel",
-			name = "Highlight mixing vessel",
+			name = "Mixing vessel",
 			description = "Highlight the mixing vessel green when it holds three pastes and is ready to mix",
 			position = 2
 	)
@@ -106,11 +225,12 @@ public interface MasteringMixologyConfig extends Config
 	}
 
 	@ConfigItem(
+			section = HIGHLIGHTS,
 			keyName = "highlightConveyorBelt",
-			name = "Highlight conveyor belt",
+			name = "Conveyor belt",
 			description = "Highlight the conveyor belt green when your finished potions match every order you're "
 					+ "making",
-			position = 2
+			position = 3
 	)
 	default boolean highlightConveyorBelt()
 	{
@@ -118,10 +238,11 @@ public interface MasteringMixologyConfig extends Config
 	}
 
 	@ConfigItem(
+			section = HIGHLIGHTS,
 			keyName = "highlightStations",
-			name = "Highlight stations",
+			name = "Stations",
 			description = "Toggles alchemical station highlighting on or off",
-			position = 2
+			position = 4
 	)
 	default boolean highlightStations()
 	{
@@ -137,14 +258,15 @@ public interface MasteringMixologyConfig extends Config
 	)
 	default boolean waitForFullOrder()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigItem(
+			section = HIGHLIGHTS,
 			keyName = "highlightQuickActionEvents",
-			name = "Highlight quick-action events",
+			name = "Quick-action events",
 			description = "Toggles station quick-action events highlighting on or off",
-			position = 2
+			position = 5
 	)
 	default boolean highlightQuickActionEvents()
 	{
@@ -159,29 +281,7 @@ public interface MasteringMixologyConfig extends Config
 	)
 	default boolean displayResin()
 	{
-		return false;
-	}
-
-	@ConfigItem(
-			keyName = "stationHighlightColor",
-			name = "Station color",
-			description = "Configures the default station highlight color",
-			position = 3
-	)
-	default Color stationHighlightColor()
-	{
-		return Color.MAGENTA;
-	}
-
-	@ConfigItem(
-			keyName = "stationQuickActionHighlightColor",
-			name = "Quick-action color",
-			description = "Configures the station quick-action highlight color",
-			position = 4
-	)
-	default Color stationQuickActionHighlightColor()
-	{
-		return Color.GREEN;
+		return true;
 	}
 
 	@ConfigItem(
@@ -196,25 +296,15 @@ public interface MasteringMixologyConfig extends Config
 	}
 
 	@ConfigItem(
+			section = HIGHLIGHTS,
 			keyName = "highlightDigweed",
-			name = "Highlight DigWeed",
+			name = "DigWeed",
 			description = "Toggles digweed highlighting on or off",
 			position = 6
 	)
 	default boolean highlightDigWeed()
 	{
 		return true;
-	}
-
-	@ConfigItem(
-			keyName = "digweedHighlightColor",
-			name = "DigWeed color",
-			description = "Configures the digweed highlight color",
-			position = 7
-	)
-	default Color digweedHighlightColor()
-	{
-		return Color.GREEN;
 	}
 
 	@ConfigItem(
@@ -232,7 +322,8 @@ public interface MasteringMixologyConfig extends Config
 			section = HIGHLIGHTS,
 			keyName = "highlightBorderWidth",
 			name = "Border width",
-			description = "Configures the border width of the object highlights"
+			description = "Configures the border width of the object highlights",
+			position = 7
 	)
 	default int highlightBorderWidth()
 	{
@@ -243,7 +334,8 @@ public interface MasteringMixologyConfig extends Config
 			section = HIGHLIGHTS,
 			keyName = "highlightFeather",
 			name = "Feather",
-			description = "Configures the amount of 'feathering' to be applied to the object highlights"
+			description = "Configures the amount of 'feathering' to be applied to the object highlights",
+			position = 8
 	)
 	default int highlightFeather()
 	{
@@ -268,18 +360,6 @@ public interface MasteringMixologyConfig extends Config
 	default Notification thresholdNotification()
 	{
 		return Notification.OFF;
-	}
-
-	@ConfigItem(
-			section = REWARD_TRACKING,
-			keyName = "showResinBars",
-			name = "Show Resin Bars",
-			description = "Toggle to display or hide the resin progress bars",
-			position = 2
-	)
-	default boolean showResinBars()
-	{
-		return true;
 	}
 
 	@ConfigItem(
@@ -368,259 +448,72 @@ public interface MasteringMixologyConfig extends Config
 
 	@ConfigItem(
 			section = REWARD_TRACKING,
-			keyName = "trackChuggingBarrel",
-			name = "Chugging Barrel",
-			description = "Include Chugging Barrel(s) in the tracked totals",
+			keyName = "chuggingBarrelQuantity",
+			name = "Chugging Barrel qty",
+			description = "How many Chugging Barrels to include in the tracked totals; 0 leaves them out",
 			position = 10
 	)
-	default boolean trackChuggingBarrel()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-			section = REWARD_TRACKING,
-			keyName = "chuggingBarrelQuantity",
-			name = "  Chugging Barrel qty",
-			description = "How many Chugging Barrels to include when ticked",
-			position = 11
-	)
-	@Range(min = 1, max = 100000)
+	@Range(min = 0, max = 100000)
 	default int chuggingBarrelQuantity()
 	{
-		return 1;
-	}
-
-	@ConfigItem(
-			section = REWARD_TRACKING,
-			keyName = "trackApprenticePack",
-			name = "Apprentice Potion Pack",
-			description = "Include Apprentice Potion Pack(s) in the tracked totals",
-			position = 12
-	)
-	default boolean trackApprenticePack()
-	{
-		return false;
+		return 0;
 	}
 
 	@ConfigItem(
 			section = REWARD_TRACKING,
 			keyName = "apprenticePackQuantity",
-			name = "  Apprentice Pack qty",
-			description = "How many Apprentice Potion Packs to include when ticked",
-			position = 13
+			name = "Apprentice Pack qty",
+			description = "How many Apprentice Potion Packs to include in the tracked totals; 0 leaves them out",
+			position = 11
 	)
-	@Range(min = 1, max = 100000)
+	@Range(min = 0, max = 100000)
 	default int apprenticePackQuantity()
 	{
-		return 1;
-	}
-
-	@ConfigItem(
-			section = REWARD_TRACKING,
-			keyName = "trackAdeptPack",
-			name = "Adept Potion Pack",
-			description = "Include Adept Potion Pack(s) in the tracked totals",
-			position = 14
-	)
-	default boolean trackAdeptPack()
-	{
-		return false;
+		return 0;
 	}
 
 	@ConfigItem(
 			section = REWARD_TRACKING,
 			keyName = "adeptPackQuantity",
-			name = "  Adept Pack qty",
-			description = "How many Adept Potion Packs to include when ticked",
-			position = 15
+			name = "Adept Pack qty",
+			description = "How many Adept Potion Packs to include in the tracked totals; 0 leaves them out",
+			position = 12
 	)
-	@Range(min = 1, max = 100000)
+	@Range(min = 0, max = 100000)
 	default int adeptPackQuantity()
 	{
-		return 1;
-	}
-
-	@ConfigItem(
-			section = REWARD_TRACKING,
-			keyName = "trackExpertPack",
-			name = "Expert Potion Pack",
-			description = "Include Expert Potion Pack(s) in the tracked totals",
-			position = 16
-	)
-	default boolean trackExpertPack()
-	{
-		return false;
+		return 0;
 	}
 
 	@ConfigItem(
 			section = REWARD_TRACKING,
 			keyName = "expertPackQuantity",
-			name = "  Expert Pack qty",
-			description = "How many Expert Potion Packs to include when ticked",
-			position = 17
+			name = "Expert Pack qty",
+			description = "How many Expert Potion Packs to include in the tracked totals; 0 leaves them out",
+			position = 13
 	)
-	@Range(min = 1, max = 100000)
+	@Range(min = 0, max = 100000)
 	default int expertPackQuantity()
 	{
-		return 1;
-	}
-
-	@ConfigItem(
-			section = REWARD_TRACKING,
-			keyName = "trackAldarium",
-			name = "Aldarium",
-			description = "Include Aldarium in the tracked totals",
-			position = 18
-	)
-	default boolean trackAldarium()
-	{
-		return false;
+		return 0;
 	}
 
 	@ConfigItem(
 			section = REWARD_TRACKING,
 			keyName = "aldariumQuantity",
-			name = "  Aldarium qty",
-			description = "How many Aldarium to include when ticked",
-			position = 19
+			name = "Aldarium qty",
+			description = "How many Aldarium to include in the tracked totals; 0 leaves them out",
+			position = 14
 	)
-	@Range(min = 1, max = 100000)
+	@Range(min = 0, max = 100000)
 	default int aldariumQuantity()
 	{
-		return 1;
-	}
-
-	@ConfigSection(
-			name = "Recommended-Potion Highlight",
-			description = "Colour each order green (brew it) or red (skip it) based on the chosen strategy",
-			position = 15
-	)
-	String RECOMMENDED_HIGHLIGHT = "RecommendedHighlight";
-
-	@ConfigItem(
-			section = RECOMMENDED_HIGHLIGHT,
-			keyName = "highlightRecommendedPotions",
-			name = "Highlight recommended potions",
-			description = "Colours each order's name green if the chosen strategy recommends brewing it, red "
-					+ "otherwise. Requires at least one tracked reward in Reward Tracking.",
-			position = 1
-	)
-	default boolean highlightRecommendedPotions()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-			section = RECOMMENDED_HIGHLIGHT,
-			keyName = "recommendedPotionColor",
-			name = "Recommended colour",
-			description = "Text colour for orders the strategy says you should brew",
-			position = 2
-	)
-	default Color recommendedPotionColor()
-	{
-		return new Color(0, 200, 0);
-	}
-
-	@ConfigItem(
-			section = RECOMMENDED_HIGHLIGHT,
-			keyName = "notRecommendedPotionColor",
-			name = "Skip colour",
-			description = "Text colour for orders the strategy says you should skip (reroll)",
-			position = 3
-	)
-	default Color notRecommendedPotionColor()
-	{
-		return new Color(220, 50, 50);
-	}
-
-	@ConfigSection(
-			name = "Accessibility",
-			description = "Dyslexia / colour-blind friendly alternatives: replace M/A/L letters with coloured blocks "
-					+ "and swap the recommend/skip text + resin colours for higher-contrast options",
-			position = 20
-	)
-	String ACCESSIBILITY = "Accessibility";
-
-	@ConfigItem(
-			section = ACCESSIBILITY,
-			keyName = "dyslexicMixology",
-			name = "Dyslexic/Colorblind Mode",
-			description = "Replace M/A/L letters with coloured blocks in the order list and inventory tags; apply the "
-					+ "accessibility colours below to recommend/skip text, resin blocks, levers, and progress bars",
-			position = 1
-	)
-	default boolean accessibilityMode()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-			section = ACCESSIBILITY,
-			keyName = "accessibilityRecommendColor",
-			name = "Recommend colour",
-			description = "Text colour for orders the strategy says you should brew (applied when accessibility "
-					+ "mode is on)",
-			position = 2
-	)
-	default Color accessibilityRecommendColor()
-	{
-		return new Color(0xFFC107);
-	}
-
-	@ConfigItem(
-			section = ACCESSIBILITY,
-			keyName = "accessibilitySkipColor",
-			name = "Skip colour",
-			description = "Text colour for orders the strategy says you should skip (applied when accessibility "
-					+ "mode is on)",
-			position = 3
-	)
-	default Color accessibilitySkipColor()
-	{
-		return new Color(0x4A4A4A);
-	}
-
-	@ConfigItem(
-			section = ACCESSIBILITY,
-			keyName = "accessibilityMoxColor",
-			name = "MOX colour",
-			description = "Colour for MOX resin (blocks, lever, progress bar) when accessibility mode is on",
-			position = 4
-	)
-	default Color accessibilityMoxColor()
-	{
-		return new Color(0x9D4EDD);
-	}
-
-	@ConfigItem(
-			section = ACCESSIBILITY,
-			keyName = "accessibilityAgaColor",
-			name = "AGA colour",
-			description = "Colour for AGA resin (blocks, lever, progress bar) when accessibility mode is on",
-			position = 5
-	)
-	default Color accessibilityAgaColor()
-	{
-		return new Color(0x00FFB3);
-	}
-
-	@ConfigItem(
-			section = ACCESSIBILITY,
-			keyName = "accessibilityLyeColor",
-			name = "LYE colour",
-			description = "Colour for LYE resin (blocks, lever, progress bar) when accessibility mode is on",
-			position = 6
-	)
-	default Color accessibilityLyeColor()
-	{
-		return new Color(0xFF6D00);
+		return 0;
 	}
 
 	@ConfigSection(
 			name = "Misclick protection",
-			description = "Lock idle stations and cap the Concentrate spam-click",
+			description = "Lock idle or running stations and cap the Concentrate spam-click",
 			position = 25
 	)
 	String MISCLICK_PROTECTION = "MisclickProtection";
@@ -665,11 +558,37 @@ public interface MasteringMixologyConfig extends Config
 			section = MISCLICK_PROTECTION,
 			keyName = "capConcentrate",
 			name = "Cap Concentrate clicks",
-			description = "Stops Concentrate clicks once one more click would finish the potion; it completes on its "
-					+ "own, so spare clicks cannot load the next potion",
+			description = "Stops Concentrate clicks on the last tick, when the potion completes on its own anyway, "
+					+ "so spare clicks cannot load the next potion",
 			position = 4
 	)
 	default boolean capConcentrate()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+			section = MISCLICK_PROTECTION,
+			keyName = "lockAlembicWhileRunning",
+			name = "Lock Alembic while running",
+			description = "Makes the Alembic unclickable while it is processing a potion, except when its "
+					+ "quick action is up",
+			position = 5
+	)
+	default boolean lockAlembicWhileRunning()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+			section = MISCLICK_PROTECTION,
+			keyName = "lockAgitatorWhileRunning",
+			name = "Lock Agitator while running",
+			description = "Makes the Agitator unclickable while it is processing a potion, except when its "
+					+ "quick action is up",
+			position = 6
+	)
+	default boolean lockAgitatorWhileRunning()
 	{
 		return false;
 	}
@@ -680,7 +599,7 @@ public interface MasteringMixologyConfig extends Config
 			name = "Lever click protection",
 			description = "Only the next lever for the order you're mixing can be pulled. All levers stay pullable if "
 					+ "the vessel holds pastes that match no order",
-			position = 5
+			position = 7
 	)
 	default boolean leverClickProtection()
 	{
@@ -693,7 +612,7 @@ public interface MasteringMixologyConfig extends Config
 			name = "Potion protection",
 			description = "Blocks mixing at the vessel when its three pastes don't make a potion for an open order. "
 					+ "Turn this off to mix anyway",
-			position = 6
+			position = 8
 	)
 	default boolean potionProtection()
 	{

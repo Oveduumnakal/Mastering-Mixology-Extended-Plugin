@@ -1,32 +1,26 @@
 package work.fking.masteringmixology;
 
-import java.awt.Color;
-
 import net.runelite.api.gameval.SpriteID;
 
 /**
- * The three resin components, mox, aga and lye, with the letter, colour and sprite that stand for each and the
+ * The three resin components, mox, aga and lye, with the letter and sprite that stand for each and the
  * varp that holds the player's stock of it.
  */
 public enum PotionComponent
 {
-	MOX('M', "03a9f4", SpriteID.IconAlchemyChemicals01_20x20._0, MasteringMixologyPlugin.VARP_MOX_RESIN),
-	AGA('A', "00e676", SpriteID.IconAlchemyChemicals01_20x20._1, MasteringMixologyPlugin.VARP_AGA_RESIN),
-	LYE('L', "e91e63", SpriteID.IconAlchemyChemicals01_20x20._2, MasteringMixologyPlugin.VARP_LYE_RESIN);
+	MOX('M', SpriteID.IconAlchemyChemicals01_20x20._0, MasteringMixologyPlugin.VARP_MOX_RESIN),
+	AGA('A', SpriteID.IconAlchemyChemicals01_20x20._1, MasteringMixologyPlugin.VARP_AGA_RESIN),
+	LYE('L', SpriteID.IconAlchemyChemicals01_20x20._2, MasteringMixologyPlugin.VARP_LYE_RESIN);
 
 	public static final PotionComponent[] ENTRIES = values();
 
 	private final char character;
-	private final String colorCode;
-	private final Color color;
 	private final int spriteId;
 	private final int resinVarpId;
 
-	PotionComponent(char character, String colorCode, int spriteId, int resinVarpId)
+	PotionComponent(char character, int spriteId, int resinVarpId)
 	{
 		this.character = character;
-		this.colorCode = colorCode;
-		this.color = Color.decode("#" + colorCode);
 		this.spriteId = spriteId;
 		this.resinVarpId = resinVarpId;
 	}
@@ -34,16 +28,6 @@ public enum PotionComponent
 	public char character()
 	{
 		return character;
-	}
-
-	public String colorCode()
-	{
-		return colorCode;
-	}
-
-	public Color color()
-	{
-		return color;
 	}
 
 	public int spriteId()

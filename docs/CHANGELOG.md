@@ -6,12 +6,35 @@ Extended-fork releases; the other entries are inherited from upstream.
 ## 2.0
 * **Recommendation strategy** setting (top of the plugin settings). Choose how orders are coloured brew or
   skip: *Expected value* (new, default), *Bottleneck*, *Adaptive* (the previous policy) or *Greedy* (brew all 3).
-  Expected value needs about 4 % fewer potions than the previous policy for the Reagent Pouch in simulation. See
-  [STRATEGY.md](STRATEGY.md).
-* **Hide orders panel** option: replaces the game's potion orders list with a plugin overlay.
+  Expected value needs about 4 % fewer potions than the previous policy for the Reagent Pouch in simulation.
+* **Cap Concentrate clicks** now blocks only on the last tick before the Retort finishes. It used to block once a
+  click would finish the potion, which cut off clicks that still saved a tick.
+* **Retort quick-action colour**: while Concentrate clicks still help, the Retort is drawn in the quick-action colour,
+  like the Agitator and Alembic; it returns to the station colour on the last tick.
+* **Reward tracking**: the potion packs, Aldarium and the Chugging Barrel use a single quantity setting, where 0 means
+  not tracked, instead of a tick box plus a quantity. Saved settings carry over.
+* **Lock Agitator / Alembic while running** (Misclick protection, off by default): consumes clicks on a running
+  station except during its quick-action window. Clicking away pauses the station, and the next click on it resumes.
+* **Colors** section (was Accessibility), above Highlights. It holds *Use Letters* plus the paste, skip, station,
+  quick-action and digweed colours.
+  * Recipes are coloured blocks by default; *Use Letters* (off by default) shows M/A/L letters instead. It replaces
+    *Dyslexic/Colorblind Mode*.
+  * The paste colours apply everywhere, with new defaults: Mox `#3984FF`, Aga `#6BFF76`, Lye `#FF0000`; skip `#4A4A4A`.
+  * Order names in the game's order list are coloured by paste, like the orders overlay.
+  * *Colorblind mode* (Off, Protanopia, Deuteranopia, Tritanopia): preset paste colours chosen by simulating each
+    colour blindness.
+* **Recommendations are always on** once a reward is tracked; pick *Greedy* to skip nothing. The Recommended-Potion
+  Highlight section and the recommend colours are removed.
+* **Highlights** section now holds the highlight toggles, without the "Highlight" prefix: *Levers*, *Next lever
+  only*, *Mixing vessel*, *Conveyor belt*, *Stations*, *Quick-action events* and *DigWeed*. Saved settings carry over.
+* **Resin bars always show** in the goal overlay while a reward is tracked; the *Show Resin Bars* setting is
+  removed.
+* **Hide orders panel** option (on by default): replaces the game's potion orders list with a plugin overlay.
+* **New defaults**: *Inventory Potion Tags* Colored, *Order sorting* Shortest Path, *Display resin amount*,
+  *Next lever only* and *Wait for full order* on. Settings you already saved keep their values.
 * **Mixing guidance** (new, all toggles in the Highlights and Misclick protection sections). Walks you through the
   mixing half of the loop: levers, then vessel, then stations, then conveyor.
-  * *Highlight next lever only* — highlights just the lever for the next paste instead of all three.
+  * *Next lever only* — highlights just the lever for the next paste instead of all three.
   * *Lever click protection* — only the next lever can be pulled. If the vessel holds pastes that match no order,
     every lever stays pullable so you cannot get stuck. A fast double click cannot let a second paste through.
   * *Potion protection* — blocks mixing at the vessel when its three pastes do not make a potion for an open order.
@@ -26,10 +49,9 @@ Extended-fork releases; the other entries are inherited from upstream.
     and Retort. Consumes the operate click when the station is empty
     and no unfulfilled order needs it with the potion you're currently
     holding. Examine and other options are untouched.
-  * *Cap Concentrate clicks* — stops Retort clicks once one more would
-    complete the potion; the bar coasts to completion via passive fill,
-    so spare clicks can't load the next potion. Self-calibrating: adapts
-    to higher Herblore levels that change per-click progress.
+  * *Cap Concentrate clicks* — stops Retort clicks on the last tick,
+    when passive fill completes the potion anyway, so spare clicks can't
+    load the next potion.
 
 ## V1.9.1-ext1.0
 First Extended-fork release; baseline upstream v1.9.1.

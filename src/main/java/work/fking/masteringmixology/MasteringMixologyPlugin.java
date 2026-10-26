@@ -65,7 +65,7 @@ import static work.fking.masteringmixology.PotionComponent.MOX;
 /**
  * RuneLite plugin that extends the Mastering Mixology minigame: it adds each order's recipe to the interface and
  * highlights the stations, levers, vessel and quick actions to use next. It also tracks reward goals, recommends
- * orders with a selectable strategy, protects against misclicks and offers accessibility colours.
+ * orders with a selectable strategy, protects against misclicks and lets you pick the colours.
  */
 @PluginDescriptor(name = "Mastering Mixology Extended")
 public class MasteringMixologyPlugin extends Plugin
@@ -136,6 +136,9 @@ public class MasteringMixologyPlugin extends Plugin
 	private MasteringMixologyConfig config;
 
 	@Inject
+	private ConfigManager configManager;
+
+	@Inject
 	private OverlayManager overlayManager;
 
 	@Inject
@@ -171,6 +174,13 @@ public class MasteringMixologyPlugin extends Plugin
 
 	private int agitatorQuickActionTicks = 0;
 	private int alembicQuickActionTicks = 0;
+
+	/**
+	 * Whether the player's last click went to the Agitator or Alembic. Clicking anything else stops the work, so the
+	 * running lock only holds while this is set.
+	 */
+	private boolean agitatorOperated;
+	private boolean alembicOperated;
 
 	private boolean previouslyAboveRewardThreshold = false;
 
@@ -281,6 +291,7 @@ public class MasteringMixologyPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
+		RewardQuantityMigration.migrate(configManager);
 		overlayManager.add(overlay);
 		overlayManager.add(potionOverlay);
 		overlayManager.add(goalInfoBoxOverlay);
@@ -293,17 +304,22 @@ public class MasteringMixologyPlugin extends Plugin
 			clientThread.invokeLater(this::initialize);
 	}
 
-	private void registerResinIcons()
+	/**
+	 * Adds the recipe block sprites to the client's mod icons, or repaints them if they are already there.
+	 *
+	 * @return false while the client has not loaded its mod icons yet, so the client thread runs this again later
+	 */
+	private boolean registerResinIcons()
 	{
 		if (resinIconIdx != null)
 		{
 			applyResinIconPalettes();
-			return;
+			return true;
 		}
 
 		net.runelite.api.IndexedSprite[] mod = client.getModIcons();
 		if (mod == null)
-			return;
+			return false;
 
 		final int count = SKIP_ICON + 1;
 		int base = mod.length;
@@ -321,6 +337,8 @@ public class MasteringMixologyPlugin extends Plugin
 		client.setModIcons(extended);
 		resinIconIdx = indices;
 		resinIconSprites = sprites;
+		triggerPotionOrderUpdate();
+		return true;
 	}
 
 	private net.runelite.api.IndexedSprite createBlockSprite(Color color)
@@ -356,7 +374,7 @@ public class MasteringMixologyPlugin extends Plugin
 	private Color resinIconColor(int icon)
 	{
 		if (icon == SKIP_ICON)
-			return config.accessibilitySkipColor();
+			return config.skipColor();
 
 		return effectiveComponentColor(PotionComponent.ENTRIES[icon]);
 	}
@@ -374,20 +392,25 @@ public class MasteringMixologyPlugin extends Plugin
 		}
 	}
 
+	/** Returns the colour chosen in the Colors section for a paste: the colorblind preset, or the custom colour. */
 	Color effectiveComponentColor(PotionComponent c)
 	{
-		if (!config.accessibilityMode())
-			return c.color();
+		Color preset = config.colorblindMode().color(c);
+		if (preset != null)
+			return preset;
 
 		switch (c)
 		{
-			case MOX: return config.accessibilityMoxColor();
-			case AGA: return config.accessibilityAgaColor();
-			case LYE: return config.accessibilityLyeColor();
-			default:  return c.color();
+			case MOX: return config.moxColor();
+			case AGA: return config.agaColor();
+			default:  return config.lyeColor();
 		}
 	}
 
+	/**
+	 * Removes the overlays and highlights and clears the per-session state. The game's orders panel is shown again
+	 * and rebuilt, so neither a hidden panel nor the appended recipes outlive the plugin.
+	 */
 	@Override
 	protected void shutDown()
 	{
@@ -396,6 +419,20 @@ public class MasteringMixologyPlugin extends Plugin
 		overlayManager.remove(goalInfoBoxOverlay);
 		overlayManager.remove(ordersPanelOverlay);
 		inLab = false;
+		highlightedObjects.clear();
+		agitatorQuickActionTicks = 0;
+		alembicQuickActionTicks = 0;
+		pendingLeverPulls.clear();
+		vesselCollected = false;
+		retortProgressTracker.onPotionCleared();
+		clientThread.invokeLater(() ->
+		{
+			var baseWidget = client.getWidget(COMPONENT_POTION_ORDERS);
+			if (baseWidget != null)
+				setOrdersPanelHidden(baseWidget, false);
+
+			triggerPotionOrderUpdate();
+		});
 	}
 
 	@Subscribe
@@ -454,8 +491,7 @@ public class MasteringMixologyPlugin extends Plugin
 			unHighlightObject(AlchemyObject.DIGWEED_NORTH_WEST);
 		}
 
-		if (event.getKey().equals("showResinBars") || event.getKey().startsWith("track")
-				|| event.getKey().endsWith("Quantity"))
+		if (event.getKey().startsWith("track") || event.getKey().endsWith("Quantity"))
 		{
 			recalculateGoalData();
 			previouslyAboveRewardThreshold = false;
@@ -474,19 +510,17 @@ public class MasteringMixologyPlugin extends Plugin
 		if (event.getKey().equals("recommendationStrategy"))
 			recommendationPolicy = config.recommendationStrategy().createPolicy();
 
-		if (event.getKey().equals("highlightRecommendedPotions")
-				|| event.getKey().equals("recommendationStrategy")
-				|| event.getKey().equals("recommendedPotionColor")
-				|| event.getKey().equals("notRecommendedPotionColor")
-				|| event.getKey().equals("dyslexicMixology")
-				|| event.getKey().equals("accessibilityRecommendColor")
+		if (event.getKey().equals("recommendationStrategy")
+				|| event.getKey().equals("useLetters")
+				|| event.getKey().equals("colorblindMode")
+				|| event.getKey().equals("accessibilityMoxColor")
+				|| event.getKey().equals("accessibilityAgaColor")
+				|| event.getKey().equals("accessibilityLyeColor")
 				|| event.getKey().equals("accessibilitySkipColor"))
-		{
-			recommendationPolicy.reset();
 			clientThread.invokeLater(this::triggerPotionOrderUpdate);
-		}
 
-		if (event.getKey().equals("dyslexicMixology")
+		if (event.getKey().equals("useLetters")
+				|| event.getKey().equals("colorblindMode")
 				|| event.getKey().equals("accessibilityMoxColor")
 				|| event.getKey().equals("accessibilityAgaColor")
 				|| event.getKey().equals("accessibilityLyeColor")
@@ -553,11 +587,12 @@ public class MasteringMixologyPlugin extends Plugin
 	 * Reacts to the lab's varbits and varps.
 	 *
 	 * <p>Delivering a potion resets every order varbit to 0 before setting the new values, so the first order varbit
-	 * dropping to 0 clears all the stations. A station's potion varbit returning to 0 means that station has finished:
-	 * its highlight is removed and the matching order is fulfilled. A progress varbit that drops means a quick action
-	 * failed and a quick-action varbit means one was just popped, so both reset that station's highlight. The
-	 * Agitator's quick action has a window of two ticks and the Alembic's of one, and the highlight is also reset
-	 * once that window has passed. Resin varps recalculate the goal.
+	 * dropping to 0 clears all the stations and the order list; the new orders then start with nothing done. A
+	 * station's potion varbit returning to 0 means that station has finished: its highlight is removed and the
+	 * matching order is fulfilled. A progress varbit that drops means a quick action failed and a quick-action varbit
+	 * means one was just popped, so both reset that station's highlight. The Agitator's quick action has a window of
+	 * two ticks and the Alembic's of one, and the highlight is also reset once that window has passed. Resin varps
+	 * recalculate the goal.
 	 */
 	@Subscribe
 	public void onVarbitChanged(VarbitChanged event)
@@ -569,9 +604,14 @@ public class MasteringMixologyPlugin extends Plugin
 		if (varbitId == VARBIT_POTION_ORDER_1)
 		{
 			if (value == 0)
+			{
 				unHighlightAllStations();
+				potionOrders = Collections.emptyList();
+			}
 			else
+			{
 				clientThread.invokeAtTickEnd(this::updatePotionOrders);
+			}
 		}
 		else if (varbitId == VARBIT_ALEMBIC_POTION)
 		{
@@ -582,6 +622,7 @@ public class MasteringMixologyPlugin extends Plugin
 				tryHighlightNextStation();
 				LOGGER.debug("Finished crystalising {}", alembicPotionType);
 				alembicPotionType = null;
+				alembicQuickActionTicks = 0;
 			}
 			else
 			{
@@ -598,6 +639,7 @@ public class MasteringMixologyPlugin extends Plugin
 				tryHighlightNextStation();
 				LOGGER.debug("Finished homogenising {}", agitatorPotionType);
 				agitatorPotionType = null;
+				agitatorQuickActionTicks = 0;
 			}
 			else
 			{
@@ -683,7 +725,9 @@ public class MasteringMixologyPlugin extends Plugin
 		{
 			if (agitatorQuickActionTicks == 2)
 			{
-				resetStationHighlight(AlchemyObject.AGITATOR);
+				if (config.highlightQuickActionEvents())
+					resetStationHighlight(AlchemyObject.AGITATOR);
+
 				agitatorQuickActionTicks = 0;
 			}
 
@@ -699,7 +743,9 @@ public class MasteringMixologyPlugin extends Plugin
 		{
 			if (alembicQuickActionTicks == 1)
 			{
-				resetStationHighlight(AlchemyObject.ALEMBIC);
+				if (config.highlightQuickActionEvents())
+					resetStationHighlight(AlchemyObject.ALEMBIC);
+
 				alembicQuickActionTicks = 0;
 			}
 
@@ -711,6 +757,7 @@ public class MasteringMixologyPlugin extends Plugin
 		else if (varbitId == VarbitID.MM_RETORT_PROGRESS)
 		{
 			retortProgressTracker.onProgressChanged(value);
+			updateRetortQuickActionHighlight();
 		}
 		else if (varbitId == VARBIT_AGITATOR_QUICKACTION)
 		{
@@ -807,7 +854,10 @@ public class MasteringMixologyPlugin extends Plugin
 				&& action != MenuAction.GAME_OBJECT_THIRD_OPTION
 				&& action != MenuAction.GAME_OBJECT_FOURTH_OPTION
 				&& action != MenuAction.GAME_OBJECT_FIFTH_OPTION)
+		{
+			recordOperatedStation(null, action);
 			return;
+		}
 
 		if (isLeverBlocked(event.getId()) || isVesselBlocked(event.getId()))
 		{
@@ -817,11 +867,29 @@ public class MasteringMixologyPlugin extends Plugin
 
 		recordLeverPull(event.getId());
 		AlchemyObject station = StationGuard.stationFromTarget(event.getMenuTarget());
-		if (station == null)
+		if (station != null && (isCapBlocked(station) || isLockBlocked(station) || isRunningLockBlocked(station)))
+		{
+			event.consume();
+			return;
+		}
+
+		recordOperatedStation(station, action);
+	}
+
+	/**
+	 * Remembers which station a let-through click went to. Any other click, except cancel or examine, stops the
+	 * Agitator and Alembic, so a paused station can be clicked again to resume.
+	 */
+	private void recordOperatedStation(AlchemyObject station, MenuAction action)
+	{
+		if (action == MenuAction.CANCEL
+				|| action == MenuAction.EXAMINE_OBJECT
+				|| action == MenuAction.EXAMINE_NPC
+				|| action == MenuAction.EXAMINE_ITEM_GROUND)
 			return;
 
-		if (isCapBlocked(station) || isLockBlocked(station))
-			event.consume();
+		agitatorOperated = station == AlchemyObject.AGITATOR;
+		alembicOperated = station == AlchemyObject.ALEMBIC;
 	}
 
 	private boolean isLeverBlocked(int objectId)
@@ -891,7 +959,6 @@ public class MasteringMixologyPlugin extends Plugin
 
 		return StationGuard.concentrateCapReached(
 				retortProgressTracker.currentProgress(),
-				retortProgressTracker.clickDelta(),
 				StationGuard.RETORT_PROGRESS_MAX);
 	}
 
@@ -902,6 +969,23 @@ public class MasteringMixologyPlugin extends Plugin
 
 		boolean occupied = stationOccupied(station);
 		return !StationGuard.isStationNeeded(station, occupied, potionOrders, heldItemIds());
+	}
+
+	/**
+	 * Consumes Agitator and Alembic clicks while the player works the station, except during its quick-action window.
+	 * A potion left in a station the player walked away from does not count as running.
+	 */
+	private boolean isRunningLockBlocked(AlchemyObject station)
+	{
+		if (station == AlchemyObject.AGITATOR)
+			return StationGuard.runningLockBlocks(config.lockAgitatorWhileRunning(),
+					agitatorPotionType != null && agitatorOperated, agitatorQuickActionTicks > 0);
+
+		if (station == AlchemyObject.ALEMBIC)
+			return StationGuard.runningLockBlocks(config.lockAlembicWhileRunning(),
+					alembicPotionType != null && alembicOperated, alembicQuickActionTicks > 0);
+
+		return false;
 	}
 
 	private boolean isLockEnabled(AlchemyObject station)
@@ -952,33 +1036,35 @@ public class MasteringMixologyPlugin extends Plugin
 	 * Highlights a station's quick action when its spot animation appears.
 	 *
 	 * <p>The Alembic's quick action has a window of one tick and the Agitator's a window of two, so a counter goes
-	 * 0, 1 (and 2 for the Agitator) and the highlight is removed on that station's next progress update.
+	 * 0, 1 (and 2 for the Agitator) and the window closes on that station's next progress update. The window is
+	 * tracked even with the highlight off, because the running-station locks let clicks through during it.
 	 */
 	@Subscribe
 	public void onGraphicsObjectCreated(GraphicsObjectCreated event)
 	{
 		var spotAnimId = event.getGraphicsObject().getId();
-
-		if (!config.highlightQuickActionEvents())
-			return;
+		boolean highlight = config.highlightQuickActionEvents();
 
 		if (spotAnimId == SPOT_ANIM_ALEMBIC && alembicPotionType != null)
 		{
-			highlightObject(AlchemyObject.ALEMBIC, config.stationQuickActionHighlightColor());
-
-			if (config.soundEffectAlembic())
-			{
-				LOGGER.debug("Playing manual found_gem sound effect");
-				client.playSoundEffect(FOUND_GEM);
-			}
-
 			alembicQuickActionTicks = 1;
+			if (highlight)
+			{
+				highlightObject(AlchemyObject.ALEMBIC, config.stationQuickActionHighlightColor());
+
+				if (config.soundEffectAlembic())
+				{
+					LOGGER.debug("Playing manual found_gem sound effect");
+					client.playSoundEffect(FOUND_GEM);
+				}
+			}
 		}
 
 		if (spotAnimId == SPOT_ANIM_AGITATOR && agitatorPotionType != null)
 		{
-			highlightObject(AlchemyObject.AGITATOR, config.stationQuickActionHighlightColor());
 			agitatorQuickActionTicks = 1;
+			if (highlight)
+				highlightObject(AlchemyObject.AGITATOR, config.stationQuickActionHighlightColor());
 		}
 	}
 
@@ -1009,8 +1095,8 @@ public class MasteringMixologyPlugin extends Plugin
 	 *
 	 * <p>The rows are found from the interface script (Joshua-F/cs2-scripts, {@code [proc,script7063].cs2}, line 26).
 	 * The recommendation is computed once per rebuild, because the orders and the resin state are both
-	 * stable until the next refresh. It is null when highlighting is disabled, for instance when the toggle is off or
-	 * no rewards are tracked yet.
+	 * stable until the next refresh. It is null when there is nothing to recommend, for instance when no rewards are
+	 * tracked yet.
 	 *
 	 * <p>The filtered children are laid out as a text for the heading, then a graphic and a text for each order:
 	 * <pre>{@code
@@ -1049,11 +1135,10 @@ public class MasteringMixologyPlugin extends Plugin
 			orderSprites.put(order.idx(), orderGraphic.getSpriteId());
 			LOGGER.debug("Order {} modifier {} sprite {}",
 					order.idx(), order.potionModifier(), orderGraphic.getSpriteId());
-			var builder = new StringBuilder(orderText.getText());
 			boolean skipped = recommendedSlots != null && !order.fulfilled() && !recommendedSlots.contains(order.idx());
-			Color skipColor = config.accessibilityMode()
-					? config.accessibilitySkipColor()
-					: config.notRecommendedPotionColor();
+			Color skipColor = config.skipColor();
+			var builder = new StringBuilder(skipped ? orderText.getText() : potionName(order.potionType(),
+					orderText.getText()));
 
 			if (order.fulfilled())
 				builder.append(" (<col=00ff00>done!</col>)");
@@ -1064,13 +1149,8 @@ public class MasteringMixologyPlugin extends Plugin
 
 			orderText.setText(builder.toString());
 
-			if (recommendedSlots != null && !order.fulfilled())
-			{
-				Color recommendColor = config.accessibilityMode()
-						? config.accessibilityRecommendColor()
-						: config.recommendedPotionColor();
-				orderText.setTextColor((skipped ? skipColor : recommendColor).getRGB());
-			}
+			if (skipped)
+				orderText.setTextColor(skipColor.getRGB());
 
 			if (i != order.idx())
 			{
@@ -1091,14 +1171,32 @@ public class MasteringMixologyPlugin extends Plugin
 	}
 
 	/**
-	 * Builds the recipe shown after an order's name: coloured letters, or blocks in accessibility mode.
+	 * Colours each part of the potion's name in its paste colour, as the orders overlay does. Text that is not the
+	 * plain potion name is returned unchanged.
+	 */
+	private String potionName(PotionType potionType, String text)
+	{
+		var parts = potionType.nameParts();
+		if (!text.equals(String.join("", parts)))
+			return text;
+
+		var components = potionType.components();
+		var builder = new StringBuilder();
+		for (int i = 0; i < parts.length; i++)
+			builder.append(ColorUtil.wrapWithColorTag(parts[i], effectiveComponentColor(components[i])));
+
+		return builder.toString();
+	}
+
+	/**
+	 * Builds the recipe shown after an order's name: coloured blocks, or letters with Use Letters on.
 	 * A skipped order draws every letter or block in the skip colour.
 	 */
 	private String recipeText(PotionType potionType, boolean skipped, Color skipColor)
 	{
-		boolean blocks = config.accessibilityMode() && resinIconIdx != null;
+		boolean blocks = !config.useLetters() && resinIconIdx != null;
 		if (!skipped)
-			return blocks ? potionType.recipeBlocks(resinIconIdx) : potionType.recipe();
+			return blocks ? potionType.recipeBlocks(resinIconIdx) : recipeLetters(potionType);
 
 		if (blocks)
 		{
@@ -1109,10 +1207,20 @@ public class MasteringMixologyPlugin extends Plugin
 		return ColorUtil.wrapWithColorTag(potionType.abbreviation(), skipColor);
 	}
 
+	private String recipeLetters(PotionType potionType)
+	{
+		var builder = new StringBuilder();
+		for (var component : potionType.components())
+			builder.append(ColorUtil.wrapWithColorTag(String.valueOf(component.character()),
+					effectiveComponentColor(component)));
+
+		return builder.toString();
+	}
+
 	/**
 	 * Returns the order indices the chosen recommendation policy picks
-	 * this turn, or null if highlighting is disabled (config off, no
-	 * rewards selected, or order data missing).
+	 * this turn, or null if there is nothing to recommend (no rewards
+	 * selected, or order data missing).
 	 *
 	 * <p>The target is the summed cost of the selected rewards, which {@link Goal} already computes for the overlay
 	 * and the threshold notification. The orders are placed back in their original conveyor slots, because
@@ -1120,9 +1228,6 @@ public class MasteringMixologyPlugin extends Plugin
 	 */
 	private Set<Integer> computeRecommendedSlots()
 	{
-		if (!config.highlightRecommendedPotions())
-			return null;
-
 		if (potionOrders.size() != 3)
 			return null;
 
@@ -1239,10 +1344,32 @@ public class MasteringMixologyPlugin extends Plugin
 							config.highlightFeather()));
 	}
 
+	/**
+	 * Draws the Retort in the quick-action colour while Concentrate clicks still finish the potion sooner, and back in
+	 * the station colour from the last tick on.
+	 */
+	private void updateRetortQuickActionHighlight()
+	{
+		if (!config.highlightQuickActionEvents() || !retortProgressTracker.potionLoaded())
+			return;
+
+		int progress = retortProgressTracker.currentProgress();
+		if (StationGuard.concentrateWorthClicking(progress, StationGuard.RETORT_PROGRESS_MAX))
+			highlightObject(AlchemyObject.RETORT, config.stationQuickActionHighlightColor());
+		else if (progress > 0)
+			resetStationHighlight(AlchemyObject.RETORT);
+	}
+
+	/**
+	 * Puts a station back to its normal highlight after a quick action: the station colour, or no highlight at all
+	 * when station highlights are off, so the quick-action colour never lingers.
+	 */
 	public void resetStationHighlight(AlchemyObject alchemyObject)
 	{
 		if (config.highlightStations())
 			highlightObject(alchemyObject, config.stationHighlightColor());
+		else
+			unHighlightObject(alchemyObject);
 	}
 
 	public void unHighlightObject(AlchemyObject alchemyObject)
@@ -1420,7 +1547,9 @@ public class MasteringMixologyPlugin extends Plugin
 	private void updatePotionOrders()
 	{
 		LOGGER.debug("Updating potion orders");
+		var previousOrders = potionOrders;
 		potionOrders = getPotionOrders();
+		PotionOrder.keepFulfilled(previousOrders, potionOrders);
 
 		var potionOrderSorting = config.potionOrderSorting();
 
@@ -1468,7 +1597,7 @@ public class MasteringMixologyPlugin extends Plugin
 	private void addResinText(Widget widget, int x, int varp, PotionComponent component)
 	{
 		var amount = client.getVarpValue(varp);
-		var color = component.color().getRGB();
+		var color = effectiveComponentColor(component).getRGB();
 
 		widget.setText(amount + "")
 				.setTextShadowed(true)

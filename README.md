@@ -37,10 +37,14 @@ The vessel and conveyor belt highlights are on by default; everything else in th
   Stop clicks on the Alembic, Agitator or Retort when the station is empty and no order needs it with the potion you are
   holding.
 
+- **Lock running stations**
+
+  Stop clicks on a running Agitator or Alembic, except while its quick action is up.
+
 - **Cap Concentrate clicks**
 
-  Stop Retort clicks once one more would complete the potion, so spare clicks cannot load the next potion. It adapts to
-  higher Herblore levels by itself.
+  Stop Retort clicks on the last tick, when passive fill completes the potion anyway, so spare clicks cannot load the
+  next potion.
 
 All of these are off by default.
 
@@ -48,7 +52,8 @@ All of these are off by default.
 
 - **Track several rewards at once**
 
-  Tick any of the rewards you are saving for, with quantities for the potion packs, Aldarium and the Chugging Barrel.
+  Tick any of the rewards you are saving for. The potion packs, Aldarium and the Chugging Barrel take a quantity
+  instead; 0 leaves them out.
   The overlay shows how far each resin colour is from the combined cost.
 
 - **Know when you can afford it**
@@ -57,11 +62,11 @@ All of these are off by default.
 
 ### Order recommendations
 
-- **Brew or skip, by colour**
+- **Brew or skip**
 
-  Colour each order green (brew) or red (skip), based on the resin you still need for the rewards you ticked. Pick
-  the strategy: Expected value (default), Bottleneck, Adaptive or Greedy. The details and simulated results are in
-  the [strategy notes](docs/STRATEGY.md). It is off by default and needs at least one reward ticked.
+  Orders to skip are drawn in the skip colour, based on the resin you still need for the rewards you ticked. Pick the
+  strategy: Expected value (default), Bottleneck, Adaptive or Greedy (brew everything, so nothing is skipped). It
+  needs at least one reward ticked.
 
 ### The order list and the lab
 
@@ -79,12 +84,18 @@ All of these are off by default.
 
   Highlight digweed and get a notification when it spawns.
 
-### Accessibility
+### Colors
 
-- **Dyslexic and colour-blind mode**
+- **Blocks or letters, in your colours**
 
-  Swap the M, A and L letters for colour blocks in the order list and inventory tags, and choose your own colours for the
-  resin blocks, levers, progress bars and the brew and skip text.
+  Recipes show as coloured blocks in the order list and inventory tags; turn on *Use Letters* for M, A and L instead.
+  Pick the Mox, Aga and Lye colours (used for recipes, potion names, levers and progress bars), the skip colour, and
+  the station, quick-action and digweed highlight colours, all in one section.
+
+- **Colorblind mode**
+
+  Pick Protanopia, Deuteranopia or Tritanopia for preset Mox, Aga and Lye colours that stay distinct with that colour
+  blindness. Off (the default) uses your own colours.
 
 ## Credits
 
@@ -98,5 +109,4 @@ All of these are off by default.
 - [Report a bug](https://github.com/Oveduumnakal/Mastering-Mixology-Extended-Plugin/issues/new?template=bug_report.yml)
 - [Request a feature](https://github.com/Oveduumnakal/Mastering-Mixology-Extended-Plugin/issues/new?template=feature_request.yml)
 - [Changelog](docs/CHANGELOG.md)
-- [Strategy notes](docs/STRATEGY.md)
 - [Buy me a coffee](https://buymeacoffee.com/oveduumnakal)
