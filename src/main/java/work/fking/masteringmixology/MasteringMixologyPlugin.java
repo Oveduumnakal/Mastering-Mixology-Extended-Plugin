@@ -297,17 +297,22 @@ public class MasteringMixologyPlugin extends Plugin
 			clientThread.invokeLater(this::initialize);
 	}
 
-	private void registerResinIcons()
+	/**
+	 * Adds the recipe block sprites to the client's mod icons, or repaints them if they are already there.
+	 *
+	 * @return false while the client has not loaded its mod icons yet, so the client thread runs this again later
+	 */
+	private boolean registerResinIcons()
 	{
 		if (resinIconIdx != null)
 		{
 			applyResinIconPalettes();
-			return;
+			return true;
 		}
 
 		net.runelite.api.IndexedSprite[] mod = client.getModIcons();
 		if (mod == null)
-			return;
+			return false;
 
 		final int count = SKIP_ICON + 1;
 		int base = mod.length;
@@ -325,6 +330,8 @@ public class MasteringMixologyPlugin extends Plugin
 		client.setModIcons(extended);
 		resinIconIdx = indices;
 		resinIconSprites = sprites;
+		triggerPotionOrderUpdate();
+		return true;
 	}
 
 	private net.runelite.api.IndexedSprite createBlockSprite(Color color)
@@ -392,6 +399,10 @@ public class MasteringMixologyPlugin extends Plugin
 		}
 	}
 
+	/**
+	 * Removes the overlays and highlights and clears the per-session state. The game's orders panel is shown again
+	 * and rebuilt, so neither a hidden panel nor the appended recipes outlive the plugin.
+	 */
 	@Override
 	protected void shutDown()
 	{
@@ -400,6 +411,20 @@ public class MasteringMixologyPlugin extends Plugin
 		overlayManager.remove(goalInfoBoxOverlay);
 		overlayManager.remove(ordersPanelOverlay);
 		inLab = false;
+		highlightedObjects.clear();
+		agitatorQuickActionTicks = 0;
+		alembicQuickActionTicks = 0;
+		pendingLeverPulls.clear();
+		vesselCollected = false;
+		retortProgressTracker.onPotionCleared();
+		clientThread.invokeLater(() ->
+		{
+			var baseWidget = client.getWidget(COMPONENT_POTION_ORDERS);
+			if (baseWidget != null)
+				setOrdersPanelHidden(baseWidget, false);
+
+			triggerPotionOrderUpdate();
+		});
 	}
 
 	@Subscribe
@@ -478,6 +503,9 @@ public class MasteringMixologyPlugin extends Plugin
 		if (event.getKey().equals("recommendationStrategy"))
 			recommendationPolicy = config.recommendationStrategy().createPolicy();
 
+		if (event.getKey().equals("highlightRecommendedPotions"))
+			recommendationPolicy.reset();
+
 		if (event.getKey().equals("highlightRecommendedPotions")
 				|| event.getKey().equals("recommendationStrategy")
 				|| event.getKey().equals("recommendedPotionColor")
@@ -485,10 +513,7 @@ public class MasteringMixologyPlugin extends Plugin
 				|| event.getKey().equals("dyslexicMixology")
 				|| event.getKey().equals("accessibilityRecommendColor")
 				|| event.getKey().equals("accessibilitySkipColor"))
-		{
-			recommendationPolicy.reset();
 			clientThread.invokeLater(this::triggerPotionOrderUpdate);
-		}
 
 		if (event.getKey().equals("dyslexicMixology")
 				|| event.getKey().equals("accessibilityMoxColor")
@@ -557,11 +582,12 @@ public class MasteringMixologyPlugin extends Plugin
 	 * Reacts to the lab's varbits and varps.
 	 *
 	 * <p>Delivering a potion resets every order varbit to 0 before setting the new values, so the first order varbit
-	 * dropping to 0 clears all the stations. A station's potion varbit returning to 0 means that station has finished:
-	 * its highlight is removed and the matching order is fulfilled. A progress varbit that drops means a quick action
-	 * failed and a quick-action varbit means one was just popped, so both reset that station's highlight. The
-	 * Agitator's quick action has a window of two ticks and the Alembic's of one, and the highlight is also reset
-	 * once that window has passed. Resin varps recalculate the goal.
+	 * dropping to 0 clears all the stations and the order list; the new orders then start with nothing done. A
+	 * station's potion varbit returning to 0 means that station has finished: its highlight is removed and the
+	 * matching order is fulfilled. A progress varbit that drops means a quick action failed and a quick-action varbit
+	 * means one was just popped, so both reset that station's highlight. The Agitator's quick action has a window of
+	 * two ticks and the Alembic's of one, and the highlight is also reset once that window has passed. Resin varps
+	 * recalculate the goal.
 	 */
 	@Subscribe
 	public void onVarbitChanged(VarbitChanged event)
@@ -573,9 +599,14 @@ public class MasteringMixologyPlugin extends Plugin
 		if (varbitId == VARBIT_POTION_ORDER_1)
 		{
 			if (value == 0)
+			{
 				unHighlightAllStations();
+				potionOrders = Collections.emptyList();
+			}
 			else
+			{
 				clientThread.invokeAtTickEnd(this::updatePotionOrders);
+			}
 		}
 		else if (varbitId == VARBIT_ALEMBIC_POTION)
 		{
@@ -586,6 +617,7 @@ public class MasteringMixologyPlugin extends Plugin
 				tryHighlightNextStation();
 				LOGGER.debug("Finished crystalising {}", alembicPotionType);
 				alembicPotionType = null;
+				alembicQuickActionTicks = 0;
 			}
 			else
 			{
@@ -602,6 +634,7 @@ public class MasteringMixologyPlugin extends Plugin
 				tryHighlightNextStation();
 				LOGGER.debug("Finished homogenising {}", agitatorPotionType);
 				agitatorPotionType = null;
+				agitatorQuickActionTicks = 0;
 			}
 			else
 			{
@@ -715,6 +748,7 @@ public class MasteringMixologyPlugin extends Plugin
 		else if (varbitId == VarbitID.MM_RETORT_PROGRESS)
 		{
 			retortProgressTracker.onProgressChanged(value);
+			updateRetortQuickActionHighlight();
 		}
 		else if (varbitId == VARBIT_AGITATOR_QUICKACTION)
 		{
@@ -895,7 +929,6 @@ public class MasteringMixologyPlugin extends Plugin
 
 		return StationGuard.concentrateCapReached(
 				retortProgressTracker.currentProgress(),
-				retortProgressTracker.clickDelta(),
 				StationGuard.RETORT_PROGRESS_MAX);
 	}
 
@@ -1243,10 +1276,32 @@ public class MasteringMixologyPlugin extends Plugin
 							config.highlightFeather()));
 	}
 
+	/**
+	 * Draws the Retort in the quick-action colour while Concentrate clicks still finish the potion sooner, and back in
+	 * the station colour from the last tick on.
+	 */
+	private void updateRetortQuickActionHighlight()
+	{
+		if (!config.highlightQuickActionEvents() || !retortProgressTracker.potionLoaded())
+			return;
+
+		int progress = retortProgressTracker.currentProgress();
+		if (StationGuard.concentrateWorthClicking(progress, StationGuard.RETORT_PROGRESS_MAX))
+			highlightObject(AlchemyObject.RETORT, config.stationQuickActionHighlightColor());
+		else if (progress > 0)
+			resetStationHighlight(AlchemyObject.RETORT);
+	}
+
+	/**
+	 * Puts a station back to its normal highlight after a quick action: the station colour, or no highlight at all
+	 * when station highlights are off, so the quick-action colour never lingers.
+	 */
 	public void resetStationHighlight(AlchemyObject alchemyObject)
 	{
 		if (config.highlightStations())
 			highlightObject(alchemyObject, config.stationHighlightColor());
+		else
+			unHighlightObject(alchemyObject);
 	}
 
 	public void unHighlightObject(AlchemyObject alchemyObject)
@@ -1424,7 +1479,9 @@ public class MasteringMixologyPlugin extends Plugin
 	private void updatePotionOrders()
 	{
 		LOGGER.debug("Updating potion orders");
+		var previousOrders = potionOrders;
 		potionOrders = getPotionOrders();
+		PotionOrder.keepFulfilled(previousOrders, potionOrders);
 
 		var potionOrderSorting = config.potionOrderSorting();
 
