@@ -891,7 +891,6 @@ public class MasteringMixologyPlugin extends Plugin
 
 		return StationGuard.concentrateCapReached(
 				retortProgressTracker.currentProgress(),
-				retortProgressTracker.clickDelta(),
 				StationGuard.RETORT_PROGRESS_MAX);
 	}
 

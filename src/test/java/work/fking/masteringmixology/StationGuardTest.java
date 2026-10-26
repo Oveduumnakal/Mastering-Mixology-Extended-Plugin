@@ -69,22 +69,15 @@ public class StationGuardTest
 	}
 
 	/**
-	 * With a click delta of 2 and a maximum of 16, 14 + 2 reaches the maximum, so the cap blocks at 14 and not
-	 * at 13.
+	 * With a maximum of 16, passive fill completes from 15 on the next tick, so the cap blocks at 15. At 14 a click
+	 * still finishes one tick sooner, so it is let through.
 	 */
 	@Test
-	public void concentrateCapBlocksWhenOneMoreClickWouldComplete()
+	public void concentrateCapBlocksOnlyOnTheLastTick()
 	{
-		assertFalse(StationGuard.concentrateCapReached(13, 2, 16));
-		assertTrue(StationGuard.concentrateCapReached(14, 2, 16));
-	}
-
-	/** With a click delta of 3 and a maximum of 16, 13 + 3 reaches the maximum, so the cap blocks at 13. */
-	@Test
-	public void concentrateCapAdaptsToLargerClickDelta()
-	{
-		assertFalse(StationGuard.concentrateCapReached(12, 3, 16));
-		assertTrue(StationGuard.concentrateCapReached(13, 3, 16));
+		assertFalse(StationGuard.concentrateCapReached(13, 16));
+		assertFalse(StationGuard.concentrateCapReached(14, 16));
+		assertTrue(StationGuard.concentrateCapReached(15, 16));
 	}
 
 	/** Any potion type works, because the modifier (concentrated) drives the station. */
