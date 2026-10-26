@@ -43,7 +43,6 @@ public enum PotionType
 
 	private final int itemId;
 	private final int modifiedItemId;
-	private final String recipe;
 	private final String abbreviation;
 	private final PotionComponent[] components;
 	private final int[] resinYield;
@@ -54,7 +53,6 @@ public enum PotionType
 	{
 		this.itemId = itemId;
 		this.modifiedItemId = modifiedItemId;
-		this.recipe = colorizeRecipe(components);
 		this.components = components;
 		this.abbreviation = "" + components[0].character() + components[1].character() + components[2].character();
 		this.resinYield = resinYield(components);
@@ -105,21 +103,6 @@ public enum PotionType
 		return TYPES[potionTypeId];
 	}
 
-	private static String colorizeRecipe(PotionComponent[] components)
-	{
-		if (components.length != 3)
-			throw new IllegalArgumentException("Invalid potion components: " + Arrays.toString(components));
-
-		return colorizeRecipeComponent(components[0])
-				+ colorizeRecipeComponent(components[1])
-				+ colorizeRecipeComponent(components[2]);
-	}
-
-	private static String colorizeRecipeComponent(PotionComponent component)
-	{
-		return "<col=" + component.colorCode() + ">" + component.character() + "</col>";
-	}
-
 	public String recipeBlocks(int[] iconIdx)
 	{
 		StringBuilder sb = new StringBuilder(18);
@@ -139,11 +122,6 @@ public enum PotionType
 	public int modifiedItemId()
 	{
 		return modifiedItemId;
-	}
-
-	public String recipe()
-	{
-		return recipe;
 	}
 
 	public PotionComponent[] components()

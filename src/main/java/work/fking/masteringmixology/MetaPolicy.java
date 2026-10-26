@@ -15,7 +15,7 @@ import java.util.Set;
  * at the start of a fresh session (player enters the lab, plugin starts up).
  *
  * <p>The decision returned is the set of order indices (0..2) the player
- * should brew. The plugin maps that to UI colouring (green vs red text).
+ * should brew. The plugin draws the other orders in the skip colour.
  */
 public class MetaPolicy implements RecommendationPolicy
 {

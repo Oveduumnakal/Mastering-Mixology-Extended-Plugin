@@ -65,7 +65,7 @@ import static work.fking.masteringmixology.PotionComponent.MOX;
 /**
  * RuneLite plugin that extends the Mastering Mixology minigame: it adds each order's recipe to the interface and
  * highlights the stations, levers, vessel and quick actions to use next. It also tracks reward goals, recommends
- * orders with a selectable strategy, protects against misclicks and offers accessibility colours.
+ * orders with a selectable strategy, protects against misclicks and lets you pick the colours.
  */
 @PluginDescriptor(name = "Mastering Mixology Extended")
 public class MasteringMixologyPlugin extends Plugin
@@ -374,7 +374,7 @@ public class MasteringMixologyPlugin extends Plugin
 	private Color resinIconColor(int icon)
 	{
 		if (icon == SKIP_ICON)
-			return config.accessibilitySkipColor();
+			return config.skipColor();
 
 		return effectiveComponentColor(PotionComponent.ENTRIES[icon]);
 	}
@@ -392,17 +392,18 @@ public class MasteringMixologyPlugin extends Plugin
 		}
 	}
 
+	/** Returns the colour chosen in the Colors section for a paste: the colorblind preset, or the custom colour. */
 	Color effectiveComponentColor(PotionComponent c)
 	{
-		if (!config.accessibilityMode())
-			return c.color();
+		Color preset = config.colorblindMode().color(c);
+		if (preset != null)
+			return preset;
 
 		switch (c)
 		{
-			case MOX: return config.accessibilityMoxColor();
-			case AGA: return config.accessibilityAgaColor();
-			case LYE: return config.accessibilityLyeColor();
-			default:  return c.color();
+			case MOX: return config.moxColor();
+			case AGA: return config.agaColor();
+			default:  return config.lyeColor();
 		}
 	}
 
@@ -510,19 +511,17 @@ public class MasteringMixologyPlugin extends Plugin
 		if (event.getKey().equals("recommendationStrategy"))
 			recommendationPolicy = config.recommendationStrategy().createPolicy();
 
-		if (event.getKey().equals("highlightRecommendedPotions"))
-			recommendationPolicy.reset();
-
-		if (event.getKey().equals("highlightRecommendedPotions")
-				|| event.getKey().equals("recommendationStrategy")
-				|| event.getKey().equals("recommendedPotionColor")
-				|| event.getKey().equals("notRecommendedPotionColor")
-				|| event.getKey().equals("dyslexicMixology")
-				|| event.getKey().equals("accessibilityRecommendColor")
+		if (event.getKey().equals("recommendationStrategy")
+				|| event.getKey().equals("useLetters")
+				|| event.getKey().equals("colorblindMode")
+				|| event.getKey().equals("accessibilityMoxColor")
+				|| event.getKey().equals("accessibilityAgaColor")
+				|| event.getKey().equals("accessibilityLyeColor")
 				|| event.getKey().equals("accessibilitySkipColor"))
 			clientThread.invokeLater(this::triggerPotionOrderUpdate);
 
-		if (event.getKey().equals("dyslexicMixology")
+		if (event.getKey().equals("useLetters")
+				|| event.getKey().equals("colorblindMode")
 				|| event.getKey().equals("accessibilityMoxColor")
 				|| event.getKey().equals("accessibilityAgaColor")
 				|| event.getKey().equals("accessibilityLyeColor")
@@ -1097,8 +1096,8 @@ public class MasteringMixologyPlugin extends Plugin
 	 *
 	 * <p>The rows are found from the interface script (Joshua-F/cs2-scripts, {@code [proc,script7063].cs2}, line 26).
 	 * The recommendation is computed once per rebuild, because the orders and the resin state are both
-	 * stable until the next refresh. It is null when highlighting is disabled, for instance when the toggle is off or
-	 * no rewards are tracked yet.
+	 * stable until the next refresh. It is null when there is nothing to recommend, for instance when no rewards are
+	 * tracked yet.
 	 *
 	 * <p>The filtered children are laid out as a text for the heading, then a graphic and a text for each order:
 	 * <pre>{@code
@@ -1137,11 +1136,10 @@ public class MasteringMixologyPlugin extends Plugin
 			orderSprites.put(order.idx(), orderGraphic.getSpriteId());
 			LOGGER.debug("Order {} modifier {} sprite {}",
 					order.idx(), order.potionModifier(), orderGraphic.getSpriteId());
-			var builder = new StringBuilder(orderText.getText());
 			boolean skipped = recommendedSlots != null && !order.fulfilled() && !recommendedSlots.contains(order.idx());
-			Color skipColor = config.accessibilityMode()
-					? config.accessibilitySkipColor()
-					: config.notRecommendedPotionColor();
+			Color skipColor = config.skipColor();
+			var builder = new StringBuilder(skipped ? orderText.getText() : potionName(order.potionType(),
+					orderText.getText()));
 
 			if (order.fulfilled())
 				builder.append(" (<col=00ff00>done!</col>)");
@@ -1152,13 +1150,8 @@ public class MasteringMixologyPlugin extends Plugin
 
 			orderText.setText(builder.toString());
 
-			if (recommendedSlots != null && !order.fulfilled())
-			{
-				Color recommendColor = config.accessibilityMode()
-						? config.accessibilityRecommendColor()
-						: config.recommendedPotionColor();
-				orderText.setTextColor((skipped ? skipColor : recommendColor).getRGB());
-			}
+			if (skipped)
+				orderText.setTextColor(skipColor.getRGB());
 
 			if (i != order.idx())
 			{
@@ -1179,14 +1172,32 @@ public class MasteringMixologyPlugin extends Plugin
 	}
 
 	/**
-	 * Builds the recipe shown after an order's name: coloured letters, or blocks in accessibility mode.
+	 * Colours each part of the potion's name in its paste colour, as the orders overlay does. Text that is not the
+	 * plain potion name is returned unchanged.
+	 */
+	private String potionName(PotionType potionType, String text)
+	{
+		var parts = potionType.nameParts();
+		if (!text.equals(String.join("", parts)))
+			return text;
+
+		var components = potionType.components();
+		var builder = new StringBuilder();
+		for (int i = 0; i < parts.length; i++)
+			builder.append(ColorUtil.wrapWithColorTag(parts[i], effectiveComponentColor(components[i])));
+
+		return builder.toString();
+	}
+
+	/**
+	 * Builds the recipe shown after an order's name: coloured blocks, or letters with Use Letters on.
 	 * A skipped order draws every letter or block in the skip colour.
 	 */
 	private String recipeText(PotionType potionType, boolean skipped, Color skipColor)
 	{
-		boolean blocks = config.accessibilityMode() && resinIconIdx != null;
+		boolean blocks = !config.useLetters() && resinIconIdx != null;
 		if (!skipped)
-			return blocks ? potionType.recipeBlocks(resinIconIdx) : potionType.recipe();
+			return blocks ? potionType.recipeBlocks(resinIconIdx) : recipeLetters(potionType);
 
 		if (blocks)
 		{
@@ -1197,10 +1208,20 @@ public class MasteringMixologyPlugin extends Plugin
 		return ColorUtil.wrapWithColorTag(potionType.abbreviation(), skipColor);
 	}
 
+	private String recipeLetters(PotionType potionType)
+	{
+		var builder = new StringBuilder();
+		for (var component : potionType.components())
+			builder.append(ColorUtil.wrapWithColorTag(String.valueOf(component.character()),
+					effectiveComponentColor(component)));
+
+		return builder.toString();
+	}
+
 	/**
 	 * Returns the order indices the chosen recommendation policy picks
-	 * this turn, or null if highlighting is disabled (config off, no
-	 * rewards selected, or order data missing).
+	 * this turn, or null if there is nothing to recommend (no rewards
+	 * selected, or order data missing).
 	 *
 	 * <p>The target is the summed cost of the selected rewards, which {@link Goal} already computes for the overlay
 	 * and the threshold notification. The orders are placed back in their original conveyor slots, because
@@ -1208,9 +1229,6 @@ public class MasteringMixologyPlugin extends Plugin
 	 */
 	private Set<Integer> computeRecommendedSlots()
 	{
-		if (!config.highlightRecommendedPotions())
-			return null;
-
 		if (potionOrders.size() != 3)
 			return null;
 
@@ -1580,7 +1598,7 @@ public class MasteringMixologyPlugin extends Plugin
 	private void addResinText(Widget widget, int x, int varp, PotionComponent component)
 	{
 		var amount = client.getVarpValue(varp);
-		var color = component.color().getRGB();
+		var color = effectiveComponentColor(component).getRGB();
 
 		widget.setText(amount + "")
 				.setTextShadowed(true)

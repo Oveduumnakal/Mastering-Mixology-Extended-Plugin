@@ -9,7 +9,7 @@ import net.runelite.api.widgets.WidgetItem;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.overlay.WidgetItemOverlay;
 
-/** Tags each potion in the inventory with its recipe, as letters or as colour blocks in accessibility mode. */
+/** Tags each potion in the inventory with its recipe, as colour blocks or, with Use Letters on, as letters. */
 public class InventoryPotionOverlay extends WidgetItemOverlay
 {
 	private final MasteringMixologyPlugin plugin;
@@ -39,7 +39,7 @@ public class InventoryPotionOverlay extends WidgetItemOverlay
 		var x = bounds.x + 5;
 		var y = bounds.y + 30;
 
-		if (config.accessibilityMode())
+		if (!config.useLetters())
 		{
 			drawBlocks(graphics2D, potion, x, y);
 			return;
@@ -69,7 +69,7 @@ public class InventoryPotionOverlay extends WidgetItemOverlay
 
 		for (var component : potion.components())
 		{
-			graphics2D.setColor(component.color());
+			graphics2D.setColor(plugin.effectiveComponentColor(component));
 			graphics2D.drawString(String.valueOf(component.character()), x, y);
 			x += graphics2D.getFontMetrics().charWidth(component.character());
 		}

@@ -15,6 +15,16 @@ Extended-fork releases; the other entries are inherited from upstream.
   not tracked, instead of a tick box plus a quantity. Saved settings carry over.
 * **Lock Agitator / Alembic while running** (Misclick protection, off by default): consumes clicks on a running
   station except during its quick-action window. Clicking away pauses the station, and the next click on it resumes.
+* **Colors** section (was Accessibility), above Highlights. It holds *Use Letters* plus the paste, skip, station,
+  quick-action and digweed colours.
+  * Recipes are coloured blocks by default; *Use Letters* (off by default) shows M/A/L letters instead. It replaces
+    *Dyslexic/Colorblind Mode*.
+  * The paste colours apply everywhere, with new defaults: Mox `#3984FF`, Aga `#6BFF76`, Lye `#FF0000`; skip `#4A4A4A`.
+  * Order names in the game's order list are coloured by paste, like the orders overlay.
+  * *Colorblind mode* (Off, Protanopia, Deuteranopia, Tritanopia): preset paste colours chosen by simulating each
+    colour blindness.
+* **Recommendations are always on** once a reward is tracked; pick *Greedy* to skip nothing. The Recommended-Potion
+  Highlight section and the recommend colours are removed.
 * **Hide orders panel** option: replaces the game's potion orders list with a plugin overlay.
 * **Mixing guidance** (new, all toggles in the Highlights and Misclick protection sections). Walks you through the
   mixing half of the loop: levers, then vessel, then stations, then conveyor.

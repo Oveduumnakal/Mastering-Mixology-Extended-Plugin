@@ -62,11 +62,11 @@ All of these are off by default.
 
 ### Order recommendations
 
-- **Brew or skip, by colour**
+- **Brew or skip**
 
-  Colour each order green (brew) or red (skip), based on the resin you still need for the rewards you ticked. Pick
-  the strategy: Expected value (default), Bottleneck, Adaptive or Greedy. It is off by default and needs at least one
-  reward ticked.
+  Orders to skip are drawn in the skip colour, based on the resin you still need for the rewards you ticked. Pick the
+  strategy: Expected value (default), Bottleneck, Adaptive or Greedy (brew everything, so nothing is skipped). It
+  needs at least one reward ticked.
 
 ### The order list and the lab
 
@@ -84,12 +84,18 @@ All of these are off by default.
 
   Highlight digweed and get a notification when it spawns.
 
-### Accessibility
+### Colors
 
-- **Dyslexic and colour-blind mode**
+- **Blocks or letters, in your colours**
 
-  Swap the M, A and L letters for colour blocks in the order list and inventory tags, and choose your own colours for the
-  resin blocks, levers, progress bars and the brew and skip text.
+  Recipes show as coloured blocks in the order list and inventory tags; turn on *Use Letters* for M, A and L instead.
+  Pick the Mox, Aga and Lye colours (used for recipes, potion names, levers and progress bars), the skip colour, and
+  the station, quick-action and digweed highlight colours, all in one section.
+
+- **Colorblind mode**
+
+  Pick Protanopia, Deuteranopia or Tritanopia for preset Mox, Aga and Lye colours that stay distinct with that colour
+  blindness. Off (the default) uses your own colours.
 
 ## Credits
 
