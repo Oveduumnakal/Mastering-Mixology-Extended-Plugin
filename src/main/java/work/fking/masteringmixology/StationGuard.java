@@ -57,11 +57,29 @@ final class StationGuard
 	}
 
 	/**
-	 * Whether one more click would reach or exceed the maximum. The bar then coasts the last step or steps to
-	 * completion on passive fill, so the click can be blocked.
+	 * Whether a click on a running Agitator or Alembic is consumed: the lock is on, the station is processing a
+	 * potion, and its quick action is not up.
 	 */
-	static boolean concentrateCapReached(int currentProgress, int clickDelta, int maxProgress)
+	static boolean runningLockBlocks(boolean lockEnabled, boolean running, boolean quickActionUp)
 	{
-		return currentProgress + clickDelta >= maxProgress;
+		return lockEnabled && running && !quickActionUp;
+	}
+
+	/**
+	 * Whether passive fill alone completes the potion on the next tick. A click then finishes no sooner, so it can
+	 * be blocked. Earlier clicks still save at least one tick, whatever the per-click progress.
+	 */
+	static boolean concentrateCapReached(int currentProgress, int maxProgress)
+	{
+		return currentProgress >= maxProgress - 1;
+	}
+
+	/**
+	 * Whether the Retort is running and a Concentrate click still finishes it sooner: from the first progress up to,
+	 * but not including, the last tick.
+	 */
+	static boolean concentrateWorthClicking(int currentProgress, int maxProgress)
+	{
+		return currentProgress > 0 && !concentrateCapReached(currentProgress, maxProgress);
 	}
 }
