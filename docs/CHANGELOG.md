@@ -20,7 +20,9 @@ Extended-fork releases; the other entries are inherited from upstream.
   Highlight section and the recommend colours are removed.
 * **Highlights** section now holds the highlight toggles, without the "Highlight" prefix: *Levers*, *Next lever
   only*, *Mixing vessel*, *Conveyor belt*, *Stations*, *Quick-action events* and *DigWeed*. Saved settings carry over.
-* **Hide orders panel** option: replaces the game's potion orders list with a plugin overlay.
+* **Hide orders panel** option (on by default): replaces the game's potion orders list with a plugin overlay.
+* **New defaults**: *Inventory Potion Tags* Colored, *Order sorting* Shortest Path, *Display resin amount*,
+  *Next lever only* and *Wait for full order* on. Settings you already saved keep their values.
 * **Mixing guidance** (new, all toggles in the Highlights and Misclick protection sections). Walks you through the
   mixing half of the loop: levers, then vessel, then stations, then conveyor.
   * *Next lever only* — highlights just the lever for the next paste instead of all three.

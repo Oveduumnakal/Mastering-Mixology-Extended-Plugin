@@ -161,7 +161,7 @@ public interface MasteringMixologyConfig extends Config
 	)
 	default InventoryPotionTagType inventoryPotionTagType()
 	{
-		return InventoryPotionTagType.WHITE;
+		return InventoryPotionTagType.COLORED;
 	}
 
 	@ConfigItem(
@@ -172,7 +172,7 @@ public interface MasteringMixologyConfig extends Config
 	)
 	default PotionOrderSorting potionOrderSorting()
 	{
-		return PotionOrderSorting.VANILLA;
+		return PotionOrderSorting.SHORTEST_PATH;
 	}
 
 	@ConfigItem(
@@ -184,7 +184,7 @@ public interface MasteringMixologyConfig extends Config
 	)
 	default boolean hideOrdersPanel()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigItem(
@@ -209,7 +209,7 @@ public interface MasteringMixologyConfig extends Config
 	)
 	default boolean highlightNextLeverOnly()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigItem(
@@ -258,7 +258,7 @@ public interface MasteringMixologyConfig extends Config
 	)
 	default boolean waitForFullOrder()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigItem(
@@ -281,7 +281,7 @@ public interface MasteringMixologyConfig extends Config
 	)
 	default boolean displayResin()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigItem(
