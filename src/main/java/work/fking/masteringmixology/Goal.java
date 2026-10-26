@@ -17,8 +17,6 @@ public class Goal
 	private String displayName;
 	private boolean multiMode = false;
 	private double overallProgress = 0.0;
-	private int itemsAffordable = 0;
-	private int rewardQuantity = 1;
 
 	/** Rebuilt for every component each time the goal is recalculated, so the values are never stale. */
 	private final Map<PotionComponent, ComponentData> componentDataMap = new EnumMap<>(PotionComponent.class);
@@ -49,16 +47,6 @@ public class Goal
 		return overallProgress;
 	}
 
-	public int getItemsAffordable()
-	{
-		return itemsAffordable;
-	}
-
-	public int getRewardQuantity()
-	{
-		return rewardQuantity;
-	}
-
 	public ComponentData getComponentData(PotionComponent component)
 	{
 		return componentDataMap.get(component);
@@ -67,8 +55,8 @@ public class Goal
 	/**
 	 * Rebuilds the goal from the Reward Tracking settings and the player's current resin.
 	 *
-	 * <p>The cost of every ticked reward is summed per resin colour and the first one supplies the icon. The affordable
-	 * count is limited by the scarcest colour, and the overall progress is the average of the colours' progress.
+	 * <p>The cost of every ticked reward is summed per resin colour and the first one supplies the icon. The overall
+	 * progress is the average of the colours' progress.
 	 *
 	 * @param config the plugin config holding the ticked rewards and their quantities
 	 * @param client the client the current resin amounts are read from
@@ -84,7 +72,6 @@ public class Goal
 			displayName = selected.size() == 1
 					? formatSingleDisplayName(selected.get(0))
 					: "Selected rewards (" + selected.size() + ")";
-			rewardQuantity = 1;
 
 			for (var component : PotionComponent.ENTRIES)
 			{
@@ -93,7 +80,7 @@ public class Goal
 				for (Selection sel : selected)
 					summedCost += sel.item.componentCost(component) * sel.quantity;
 
-				componentDataMap.put(component, new ComponentData(currentAmount, summedCost, 1));
+				componentDataMap.put(component, new ComponentData(currentAmount, summedCost));
 			}
 		}
 		else
@@ -101,20 +88,13 @@ public class Goal
 			multiMode = false;
 			rewardItem = RewardItem.NONE;
 			displayName = "";
-			rewardQuantity = 1;
 
 			for (var component : PotionComponent.ENTRIES)
 			{
 				int currentAmount = client.getVarpValue(component.resinVarpId());
-				componentDataMap.put(component, new ComponentData(currentAmount, 0, 1));
+				componentDataMap.put(component, new ComponentData(currentAmount, 0));
 			}
 		}
-
-		int minAffordable = componentDataMap.values().stream()
-				.mapToInt(data -> data.affordableAmount)
-				.min()
-				.orElse(0);
-		itemsAffordable = Math.min(minAffordable, rewardQuantity);
 
 		overallProgress = componentDataMap.values().stream()
 				.mapToDouble(data -> data.percentageToGoal)
@@ -151,22 +131,22 @@ public class Goal
 		if (config.trackPotionStorage())
 			list.add(new Selection(RewardItem.POTION_STORAGE, 1));
 
-		if (config.trackChuggingBarrel())
+		if (config.chuggingBarrelQuantity() > 0)
 			list.add(new Selection(RewardItem.CHUGGING_BARREL, config.chuggingBarrelQuantity()));
 
 		if (config.trackAlchemistsAmulet())
 			list.add(new Selection(RewardItem.ALCHEMISTS_AMULET, 1));
 
-		if (config.trackApprenticePack())
+		if (config.apprenticePackQuantity() > 0)
 			list.add(new Selection(RewardItem.APPRENTICE_POTION_PACK, config.apprenticePackQuantity()));
 
-		if (config.trackAdeptPack())
+		if (config.adeptPackQuantity() > 0)
 			list.add(new Selection(RewardItem.ADEPT_POTION_PACK, config.adeptPackQuantity()));
 
-		if (config.trackExpertPack())
+		if (config.expertPackQuantity() > 0)
 			list.add(new Selection(RewardItem.EXPERT_POTION_PACK, config.expertPackQuantity()));
 
-		if (config.trackAldarium())
+		if (config.aldariumQuantity() > 0)
 			list.add(new Selection(RewardItem.ALDARIUM, config.aldariumQuantity()));
 
 		return list;
@@ -185,29 +165,18 @@ public class Goal
 		}
 	}
 
-	/** One resin colour's stock against the summed goal, with the progress and affordable count derived from them. */
+	/** One resin colour's stock against the summed goal, with the progress derived from them. */
 	public static class ComponentData
 	{
 		final int currentAmount;
 		final int goalAmount;
 		final double percentageToGoal;
-		final int affordableAmount;
 
-		ComponentData(int currentAmount, int baseGoalAmount, int rewardQuantity)
+		ComponentData(int currentAmount, int goalAmount)
 		{
 			this.currentAmount = currentAmount;
-			this.goalAmount = baseGoalAmount * rewardQuantity;
-
-			if (goalAmount == 0)
-			{
-				this.percentageToGoal = 1.0;
-				this.affordableAmount = rewardQuantity;
-			}
-			else
-			{
-				this.percentageToGoal = Math.min((double) currentAmount / goalAmount, 1.0);
-				this.affordableAmount = currentAmount / baseGoalAmount;
-			}
+			this.goalAmount = goalAmount;
+			this.percentageToGoal = goalAmount == 0 ? 1.0 : Math.min((double) currentAmount / goalAmount, 1.0);
 		}
 	}
 }

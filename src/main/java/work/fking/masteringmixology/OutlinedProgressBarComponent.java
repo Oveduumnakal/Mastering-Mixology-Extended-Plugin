@@ -26,7 +26,7 @@ class OutlinedProgressBarComponent implements LayoutableRenderableEntity
 	private String rightLabel = "";
 	private Color foregroundColor = Color.GREEN;
 	private Color backgroundColor = new Color(61, 56, 49);
-	private Color fontColor = Color.WHITE;
+	private final Color fontColor = Color.WHITE;
 
 	private Point preferredLocation = new Point();
 	private Dimension preferredSize = new Dimension(ComponentConstants.STANDARD_WIDTH, BAR_HEIGHT);
@@ -60,11 +60,6 @@ class OutlinedProgressBarComponent implements LayoutableRenderableEntity
 	void setBackgroundColor(Color c)
 	{
 		this.backgroundColor = c;
-	}
-
-	void setFontColor(Color c)
-	{
-		this.fontColor = c;
 	}
 
 	@Override

@@ -460,132 +460,72 @@ public interface MasteringMixologyConfig extends Config
 
 	@ConfigItem(
 			section = REWARD_TRACKING,
-			keyName = "trackChuggingBarrel",
-			name = "Chugging Barrel",
-			description = "Include Chugging Barrel(s) in the tracked totals",
+			keyName = "chuggingBarrelQuantity",
+			name = "Chugging Barrel qty",
+			description = "How many Chugging Barrels to include in the tracked totals; 0 leaves them out",
 			position = 10
 	)
-	default boolean trackChuggingBarrel()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-			section = REWARD_TRACKING,
-			keyName = "chuggingBarrelQuantity",
-			name = "  Chugging Barrel qty",
-			description = "How many Chugging Barrels to include when ticked",
-			position = 11
-	)
-	@Range(min = 1, max = 100000)
+	@Range(min = 0, max = 100000)
 	default int chuggingBarrelQuantity()
 	{
-		return 1;
-	}
-
-	@ConfigItem(
-			section = REWARD_TRACKING,
-			keyName = "trackApprenticePack",
-			name = "Apprentice Potion Pack",
-			description = "Include Apprentice Potion Pack(s) in the tracked totals",
-			position = 12
-	)
-	default boolean trackApprenticePack()
-	{
-		return false;
+		return 0;
 	}
 
 	@ConfigItem(
 			section = REWARD_TRACKING,
 			keyName = "apprenticePackQuantity",
-			name = "  Apprentice Pack qty",
-			description = "How many Apprentice Potion Packs to include when ticked",
-			position = 13
+			name = "Apprentice Pack qty",
+			description = "How many Apprentice Potion Packs to include in the tracked totals; 0 leaves them out",
+			position = 11
 	)
-	@Range(min = 1, max = 100000)
+	@Range(min = 0, max = 100000)
 	default int apprenticePackQuantity()
 	{
-		return 1;
-	}
-
-	@ConfigItem(
-			section = REWARD_TRACKING,
-			keyName = "trackAdeptPack",
-			name = "Adept Potion Pack",
-			description = "Include Adept Potion Pack(s) in the tracked totals",
-			position = 14
-	)
-	default boolean trackAdeptPack()
-	{
-		return false;
+		return 0;
 	}
 
 	@ConfigItem(
 			section = REWARD_TRACKING,
 			keyName = "adeptPackQuantity",
-			name = "  Adept Pack qty",
-			description = "How many Adept Potion Packs to include when ticked",
-			position = 15
+			name = "Adept Pack qty",
+			description = "How many Adept Potion Packs to include in the tracked totals; 0 leaves them out",
+			position = 12
 	)
-	@Range(min = 1, max = 100000)
+	@Range(min = 0, max = 100000)
 	default int adeptPackQuantity()
 	{
-		return 1;
-	}
-
-	@ConfigItem(
-			section = REWARD_TRACKING,
-			keyName = "trackExpertPack",
-			name = "Expert Potion Pack",
-			description = "Include Expert Potion Pack(s) in the tracked totals",
-			position = 16
-	)
-	default boolean trackExpertPack()
-	{
-		return false;
+		return 0;
 	}
 
 	@ConfigItem(
 			section = REWARD_TRACKING,
 			keyName = "expertPackQuantity",
-			name = "  Expert Pack qty",
-			description = "How many Expert Potion Packs to include when ticked",
-			position = 17
+			name = "Expert Pack qty",
+			description = "How many Expert Potion Packs to include in the tracked totals; 0 leaves them out",
+			position = 13
 	)
-	@Range(min = 1, max = 100000)
+	@Range(min = 0, max = 100000)
 	default int expertPackQuantity()
 	{
-		return 1;
-	}
-
-	@ConfigItem(
-			section = REWARD_TRACKING,
-			keyName = "trackAldarium",
-			name = "Aldarium",
-			description = "Include Aldarium in the tracked totals",
-			position = 18
-	)
-	default boolean trackAldarium()
-	{
-		return false;
+		return 0;
 	}
 
 	@ConfigItem(
 			section = REWARD_TRACKING,
 			keyName = "aldariumQuantity",
-			name = "  Aldarium qty",
-			description = "How many Aldarium to include when ticked",
-			position = 19
+			name = "Aldarium qty",
+			description = "How many Aldarium to include in the tracked totals; 0 leaves them out",
+			position = 14
 	)
-	@Range(min = 1, max = 100000)
+	@Range(min = 0, max = 100000)
 	default int aldariumQuantity()
 	{
-		return 1;
+		return 0;
 	}
 
 	@ConfigSection(
 			name = "Misclick protection",
-			description = "Lock idle stations and cap the Concentrate spam-click",
+			description = "Lock idle or running stations and cap the Concentrate spam-click",
 			position = 25
 	)
 	String MISCLICK_PROTECTION = "MisclickProtection";
@@ -630,11 +570,37 @@ public interface MasteringMixologyConfig extends Config
 			section = MISCLICK_PROTECTION,
 			keyName = "capConcentrate",
 			name = "Cap Concentrate clicks",
-			description = "Stops Concentrate clicks once one more click would finish the potion; it completes on its "
-					+ "own, so spare clicks cannot load the next potion",
+			description = "Stops Concentrate clicks on the last tick, when the potion completes on its own anyway, "
+					+ "so spare clicks cannot load the next potion",
 			position = 4
 	)
 	default boolean capConcentrate()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+			section = MISCLICK_PROTECTION,
+			keyName = "lockAlembicWhileRunning",
+			name = "Lock Alembic while running",
+			description = "Makes the Alembic unclickable while it is processing a potion, except when its "
+					+ "quick action is up",
+			position = 5
+	)
+	default boolean lockAlembicWhileRunning()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+			section = MISCLICK_PROTECTION,
+			keyName = "lockAgitatorWhileRunning",
+			name = "Lock Agitator while running",
+			description = "Makes the Agitator unclickable while it is processing a potion, except when its "
+					+ "quick action is up",
+			position = 6
+	)
+	default boolean lockAgitatorWhileRunning()
 	{
 		return false;
 	}
@@ -645,7 +611,7 @@ public interface MasteringMixologyConfig extends Config
 			name = "Lever click protection",
 			description = "Only the next lever for the order you're mixing can be pulled. All levers stay pullable if "
 					+ "the vessel holds pastes that match no order",
-			position = 5
+			position = 7
 	)
 	default boolean leverClickProtection()
 	{
@@ -658,7 +624,7 @@ public interface MasteringMixologyConfig extends Config
 			name = "Potion protection",
 			description = "Blocks mixing at the vessel when its three pastes don't make a potion for an open order. "
 					+ "Turn this off to mix anyway",
-			position = 6
+			position = 8
 	)
 	default boolean potionProtection()
 	{
