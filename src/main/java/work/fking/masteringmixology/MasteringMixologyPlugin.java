@@ -499,6 +499,9 @@ public class MasteringMixologyPlugin extends Plugin
 		if (event.getKey().equals("recommendationStrategy"))
 			recommendationPolicy = config.recommendationStrategy().createPolicy();
 
+		if (event.getKey().equals("highlightRecommendedPotions"))
+			recommendationPolicy.reset();
+
 		if (event.getKey().equals("highlightRecommendedPotions")
 				|| event.getKey().equals("recommendationStrategy")
 				|| event.getKey().equals("recommendedPotionColor")
@@ -506,10 +509,7 @@ public class MasteringMixologyPlugin extends Plugin
 				|| event.getKey().equals("dyslexicMixology")
 				|| event.getKey().equals("accessibilityRecommendColor")
 				|| event.getKey().equals("accessibilitySkipColor"))
-		{
-			recommendationPolicy.reset();
 			clientThread.invokeLater(this::triggerPotionOrderUpdate);
-		}
 
 		if (event.getKey().equals("dyslexicMixology")
 				|| event.getKey().equals("accessibilityMoxColor")
