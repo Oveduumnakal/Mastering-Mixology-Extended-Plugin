@@ -13,6 +13,8 @@ Extended-fork releases; the other entries are inherited from upstream.
   like the Agitator and Alembic; it returns to the station colour on the last tick.
 * **Reward tracking**: the potion packs, Aldarium and the Chugging Barrel use a single quantity setting, where 0 means
   not tracked, instead of a tick box plus a quantity. Saved settings carry over.
+* **Lock Agitator / Alembic while running** (Misclick protection, off by default): consumes clicks on a running
+  station except during its quick-action window. Clicking away pauses the station, and the next click on it resumes.
 * **Hide orders panel** option: replaces the game's potion orders list with a plugin overlay.
 * **Mixing guidance** (new, all toggles in the Highlights and Misclick protection sections). Walks you through the
   mixing half of the loop: levers, then vessel, then stations, then conveyor.

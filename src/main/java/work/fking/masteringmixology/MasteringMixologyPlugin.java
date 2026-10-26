@@ -175,6 +175,13 @@ public class MasteringMixologyPlugin extends Plugin
 	private int agitatorQuickActionTicks = 0;
 	private int alembicQuickActionTicks = 0;
 
+	/**
+	 * Whether the player's last click went to the Agitator or Alembic. Clicking anything else stops the work, so the
+	 * running lock only holds while this is set.
+	 */
+	private boolean agitatorOperated;
+	private boolean alembicOperated;
+
 	private boolean previouslyAboveRewardThreshold = false;
 
 	private final Goal goal = new Goal(RewardItem.NONE);
@@ -720,7 +727,9 @@ public class MasteringMixologyPlugin extends Plugin
 		{
 			if (agitatorQuickActionTicks == 2)
 			{
-				resetStationHighlight(AlchemyObject.AGITATOR);
+				if (config.highlightQuickActionEvents())
+					resetStationHighlight(AlchemyObject.AGITATOR);
+
 				agitatorQuickActionTicks = 0;
 			}
 
@@ -736,7 +745,9 @@ public class MasteringMixologyPlugin extends Plugin
 		{
 			if (alembicQuickActionTicks == 1)
 			{
-				resetStationHighlight(AlchemyObject.ALEMBIC);
+				if (config.highlightQuickActionEvents())
+					resetStationHighlight(AlchemyObject.ALEMBIC);
+
 				alembicQuickActionTicks = 0;
 			}
 
@@ -845,7 +856,10 @@ public class MasteringMixologyPlugin extends Plugin
 				&& action != MenuAction.GAME_OBJECT_THIRD_OPTION
 				&& action != MenuAction.GAME_OBJECT_FOURTH_OPTION
 				&& action != MenuAction.GAME_OBJECT_FIFTH_OPTION)
+		{
+			recordOperatedStation(null, action);
 			return;
+		}
 
 		if (isLeverBlocked(event.getId()) || isVesselBlocked(event.getId()))
 		{
@@ -855,11 +869,29 @@ public class MasteringMixologyPlugin extends Plugin
 
 		recordLeverPull(event.getId());
 		AlchemyObject station = StationGuard.stationFromTarget(event.getMenuTarget());
-		if (station == null)
+		if (station != null && (isCapBlocked(station) || isLockBlocked(station) || isRunningLockBlocked(station)))
+		{
+			event.consume();
+			return;
+		}
+
+		recordOperatedStation(station, action);
+	}
+
+	/**
+	 * Remembers which station a let-through click went to. Any other click, except cancel or examine, stops the
+	 * Agitator and Alembic, so a paused station can be clicked again to resume.
+	 */
+	private void recordOperatedStation(AlchemyObject station, MenuAction action)
+	{
+		if (action == MenuAction.CANCEL
+				|| action == MenuAction.EXAMINE_OBJECT
+				|| action == MenuAction.EXAMINE_NPC
+				|| action == MenuAction.EXAMINE_ITEM_GROUND)
 			return;
 
-		if (isCapBlocked(station) || isLockBlocked(station))
-			event.consume();
+		agitatorOperated = station == AlchemyObject.AGITATOR;
+		alembicOperated = station == AlchemyObject.ALEMBIC;
 	}
 
 	private boolean isLeverBlocked(int objectId)
@@ -941,6 +973,23 @@ public class MasteringMixologyPlugin extends Plugin
 		return !StationGuard.isStationNeeded(station, occupied, potionOrders, heldItemIds());
 	}
 
+	/**
+	 * Consumes Agitator and Alembic clicks while the player works the station, except during its quick-action window.
+	 * A potion left in a station the player walked away from does not count as running.
+	 */
+	private boolean isRunningLockBlocked(AlchemyObject station)
+	{
+		if (station == AlchemyObject.AGITATOR)
+			return StationGuard.runningLockBlocks(config.lockAgitatorWhileRunning(),
+					agitatorPotionType != null && agitatorOperated, agitatorQuickActionTicks > 0);
+
+		if (station == AlchemyObject.ALEMBIC)
+			return StationGuard.runningLockBlocks(config.lockAlembicWhileRunning(),
+					alembicPotionType != null && alembicOperated, alembicQuickActionTicks > 0);
+
+		return false;
+	}
+
 	private boolean isLockEnabled(AlchemyObject station)
 	{
 		if (station == AlchemyObject.ALEMBIC)
@@ -989,33 +1038,35 @@ public class MasteringMixologyPlugin extends Plugin
 	 * Highlights a station's quick action when its spot animation appears.
 	 *
 	 * <p>The Alembic's quick action has a window of one tick and the Agitator's a window of two, so a counter goes
-	 * 0, 1 (and 2 for the Agitator) and the highlight is removed on that station's next progress update.
+	 * 0, 1 (and 2 for the Agitator) and the window closes on that station's next progress update. The window is
+	 * tracked even with the highlight off, because the running-station locks let clicks through during it.
 	 */
 	@Subscribe
 	public void onGraphicsObjectCreated(GraphicsObjectCreated event)
 	{
 		var spotAnimId = event.getGraphicsObject().getId();
-
-		if (!config.highlightQuickActionEvents())
-			return;
+		boolean highlight = config.highlightQuickActionEvents();
 
 		if (spotAnimId == SPOT_ANIM_ALEMBIC && alembicPotionType != null)
 		{
-			highlightObject(AlchemyObject.ALEMBIC, config.stationQuickActionHighlightColor());
-
-			if (config.soundEffectAlembic())
-			{
-				LOGGER.debug("Playing manual found_gem sound effect");
-				client.playSoundEffect(FOUND_GEM);
-			}
-
 			alembicQuickActionTicks = 1;
+			if (highlight)
+			{
+				highlightObject(AlchemyObject.ALEMBIC, config.stationQuickActionHighlightColor());
+
+				if (config.soundEffectAlembic())
+				{
+					LOGGER.debug("Playing manual found_gem sound effect");
+					client.playSoundEffect(FOUND_GEM);
+				}
+			}
 		}
 
 		if (spotAnimId == SPOT_ANIM_AGITATOR && agitatorPotionType != null)
 		{
-			highlightObject(AlchemyObject.AGITATOR, config.stationQuickActionHighlightColor());
 			agitatorQuickActionTicks = 1;
+			if (highlight)
+				highlightObject(AlchemyObject.AGITATOR, config.stationQuickActionHighlightColor());
 		}
 	}
 
