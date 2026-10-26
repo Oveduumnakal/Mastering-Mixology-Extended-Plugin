@@ -72,7 +72,7 @@ class GoalInfoBoxOverlay extends OverlayPanel
 	}
 
 	/**
-	 * Draws the goal panel: the reward icon, its name with the affordable/goal amount and the overall progress, then a
+	 * Draws the goal panel: the reward icon, its name and the overall progress, then a
 	 * progress bar per resin colour when those are enabled.
 	 */
 	@Override
@@ -81,24 +81,15 @@ class GoalInfoBoxOverlay extends OverlayPanel
 		var goal = plugin.getGoal();
 		var rewardItem = goal.getRewardItem();
 
-		if (rewardItem == RewardItem.NONE && !goal.isMultiMode() || !plugin.isInLabRegion())
+		if (!goal.isMultiMode() || !plugin.isInLabRegion())
 			return null;
 
 		topPanel.getChildren().clear();
 		graphics.setFont(FontManager.getRunescapeSmallFont());
 
-		String goalAmountText = "";
-		if (!goal.isMultiMode() && rewardItem.isRepeatable() && goal.getRewardQuantity() > 1)
-		{
-			goalAmountText = QuantityFormatter.quantityToStackSize(goal.getItemsAffordable())
-					+ "/" + QuantityFormatter.quantityToStackSize(goal.getRewardQuantity());
-		}
-
 		var topLine = LineComponent.builder()
 				.left(goal.getDisplayName())
 				.leftFont(FontManager.getRunescapeFont())
-				.right(goalAmountText)
-				.rightFont(FontManager.getRunescapeBoldFont())
 				.build();
 
 		var bottomLine = LineComponent.builder()
