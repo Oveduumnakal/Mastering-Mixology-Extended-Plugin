@@ -40,7 +40,7 @@ public interface MasteringMixologyConfig extends Config
 			section = COLORS,
 			keyName = "colorblindMode",
 			name = "Colorblind mode",
-			description = "Preset Mox, Aga and Lye colours that stay distinct for the chosen colour blindness. "
+			description = "Preset Mox, Aga and Lye colours that stay distinct for the chosen colour blindness.<br>"
 					+ "Off uses the Mox, Aga and Lye colours below",
 			position = 2
 	)
@@ -144,8 +144,10 @@ public interface MasteringMixologyConfig extends Config
 			keyName = "recommendationStrategy",
 			name = "Strategy",
 			description = "Expected value: the delivery with the most useful resin per potion, favouring the colours "
-					+ "furthest behind. Bottleneck: favours the single colour furthest behind. Adaptive: the original "
-					+ "three-mode policy. Greedy: always brew all 3.",
+					+ "furthest behind.<br>"
+					+ "Bottleneck: favours the single colour furthest behind.<br>"
+					+ "Adaptive: the original three-mode policy.<br>"
+					+ "Greedy: always brew all 3.",
 			position = 0
 	)
 	default RecommendationStrategy recommendationStrategy()
@@ -344,8 +346,8 @@ public interface MasteringMixologyConfig extends Config
 
 	@ConfigSection(
 			name = "Reward Tracking",
-			description = "Tick the rewards you're working toward. The overlay shows progress toward the combined "
-					+ "cost; the notification fires when you meet it.",
+			description = "Tick the rewards you're working toward.<br>"
+					+ "The overlay shows progress toward the combined cost; the notification fires when you meet it.",
 			position = 13
 	)
 	String REWARD_TRACKING = "RewardTracking";
@@ -597,8 +599,8 @@ public interface MasteringMixologyConfig extends Config
 			section = MISCLICK_PROTECTION,
 			keyName = "leverClickProtection",
 			name = "Lever click protection",
-			description = "Only the next lever for the order you're mixing can be pulled. All levers stay pullable if "
-					+ "the vessel holds pastes that match no order",
+			description = "Only the next lever for the order you're mixing can be pulled.<br>"
+					+ "All levers stay pullable if the vessel holds pastes that match no order",
 			position = 7
 	)
 	default boolean leverClickProtection()
@@ -610,7 +612,7 @@ public interface MasteringMixologyConfig extends Config
 			section = MISCLICK_PROTECTION,
 			keyName = "potionProtection",
 			name = "Potion protection",
-			description = "Blocks mixing at the vessel when its three pastes don't make a potion for an open order. "
+			description = "Blocks mixing at the vessel when its three pastes don't make a potion for an open order.<br>"
 					+ "Turn this off to mix anyway",
 			position = 8
 	)
