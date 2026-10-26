@@ -12,9 +12,11 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.GraphicsObject;
 import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
+import net.runelite.api.VarbitComposition;
 import net.runelite.api.events.GraphicsObjectCreated;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.VarbitChanged;
@@ -33,6 +35,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -200,6 +203,35 @@ public class MasteringMixologyPluginLogicTest
 		resinChanged();
 		resinChanged();
 		verify(notifier, times(1)).notify(any(), anyString());
+	}
+
+	@Test
+	public void potionOrderUpdateIsNotQueuedBeforeLogin()
+	{
+		orderVarbitAtIndex(7);
+		when(client.getGameState()).thenReturn(GameState.LOGIN_SCREEN);
+
+		plugin.triggerPotionOrderUpdate();
+
+		verify(client, never()).queueChangedVarp(anyInt());
+	}
+
+	@Test
+	public void potionOrderUpdateIsQueuedWhileLoggedIn()
+	{
+		orderVarbitAtIndex(7);
+		when(client.getGameState()).thenReturn(GameState.LOGGED_IN);
+
+		plugin.triggerPotionOrderUpdate();
+
+		verify(client).queueChangedVarp(7);
+	}
+
+	private void orderVarbitAtIndex(int varpIndex)
+	{
+		VarbitComposition varbitType = mock(VarbitComposition.class);
+		when(varbitType.getIndex()).thenReturn(varpIndex);
+		when(client.getVarbit(VarbitID.MM_LAB_ORDER_1_TYPE)).thenReturn(varbitType);
 	}
 
 	private void varbit(int varbitId, int value)

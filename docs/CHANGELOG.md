@@ -41,6 +41,7 @@ Extended-fork releases; the other entries are inherited from upstream.
   * *Mixing vessel and conveyor belt highlights* — green when they are the next thing to click.
   * *Wait for full order* — no station highlight until every order you are making has been mixed.
   * Skipped orders draw their recipe letters or blocks in the skip colour.
+* **Fixed**: an error logged at startup when the plugin starts before login.
 
 ## V1.9.1-ext1.1.0
 * **Misclick protection** (new config section, all toggles off by
