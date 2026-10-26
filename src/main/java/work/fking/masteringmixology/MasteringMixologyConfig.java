@@ -665,8 +665,8 @@ public interface MasteringMixologyConfig extends Config
 			section = MISCLICK_PROTECTION,
 			keyName = "capConcentrate",
 			name = "Cap Concentrate clicks",
-			description = "Stops Concentrate clicks once one more click would finish the potion; it completes on its "
-					+ "own, so spare clicks cannot load the next potion",
+			description = "Stops Concentrate clicks on the last tick, when the potion completes on its own anyway, "
+					+ "so spare clicks cannot load the next potion",
 			position = 4
 	)
 	default boolean capConcentrate()
