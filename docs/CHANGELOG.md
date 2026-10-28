@@ -44,6 +44,7 @@ Extended-fork releases; the other entries are inherited from upstream.
   * *Wait for full order* — no station highlight until every order you are making has been mixed.
   * Skipped orders draw their recipe letters or blocks in the skip colour.
 * **Fixed**: an error logged at startup when the plugin starts before login.
+* **Fixed**: the numbers in the resin bars sat near the top of the bar; they are now vertically centred.
 * **Setting tooltips** put each sentence on its own line.
 
 ## V1.9.1-ext1.1.0
