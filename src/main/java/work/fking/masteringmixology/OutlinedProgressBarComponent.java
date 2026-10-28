@@ -6,6 +6,7 @@ import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.font.FontRenderContext;
 
 import net.runelite.client.ui.overlay.components.ComponentConstants;
 import net.runelite.client.ui.overlay.components.LayoutableRenderableEntity;
@@ -78,7 +79,7 @@ class OutlinedProgressBarComponent implements LayoutableRenderableEntity
 		graphics.fillRect(x, y, fgWidth, height);
 
 		FontMetrics fm = graphics.getFontMetrics();
-		int textY = y + (height + fm.getAscent()) / 2 - 1;
+		int textY = centeredBaseline(graphics, y, height);
 
 		if (!leftLabel.isEmpty())
 			drawOutlined(graphics, leftLabel, x + TEXT_PADDING, textY);
@@ -97,6 +98,25 @@ class OutlinedProgressBarComponent implements LayoutableRenderableEntity
 
 		bounds.setBounds(x, y, width, height);
 		return new Dimension(width, height);
+	}
+
+	/**
+	 * Finds the baseline that centres the labels vertically in the bar. The RuneScape fonts' ascent includes
+	 * empty rows above the glyphs, so it centres on the pixel bounds of a digit (the labels are quantities)
+	 * instead; every label shares that baseline. The one-pixel outline grows the text equally up and down.
+	 *
+	 * @param graphics the graphics, with the label font set
+	 * @param y        top of the bar
+	 * @param height   height of the bar
+	 * @return the baseline y for the labels
+	 */
+	static int centeredBaseline(Graphics2D graphics, int y, int height)
+	{
+		FontRenderContext frc = graphics.getFontRenderContext();
+		Rectangle digit = graphics.getFont()
+			.createGlyphVector(frc, "0")
+			.getPixelBounds(frc, 0, 0);
+		return y + (height - digit.height) / 2 - digit.y;
 	}
 
 	private void drawOutlined(Graphics2D graphics, String text, int x, int y)
