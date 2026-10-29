@@ -58,6 +58,7 @@ Extended-fork releases; the other entries are inherited from upstream.
   right-clicking the panel moves one up or down. Bar numbers switch between light and dark text by the colour behind them.
 * **Fixed**: an error logged at startup when the plugin starts before login.
 * **Fixed**: logging out and back in lost the digweed marks on the order and the potion, and counted a delivery.
+* **Fixed**: the rewards panel stayed hidden after turning the plugin on, until the next delivery.
 * **Fixed**: the numbers in the resin bars sat near the top of the bar; they are now vertically centred.
 * **Fixed**: with two orders of the same potion, the station highlight could point at a skipped order's station,
   so finishing the potion left the recommended order open. It now points at the recommended order first.

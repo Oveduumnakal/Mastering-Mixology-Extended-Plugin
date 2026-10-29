@@ -1661,6 +1661,7 @@ public class MasteringMixologyPlugin extends Plugin
 		LOGGER.debug("initialize plugin");
 		inLab = true;
 		unfinishedInInventory = countUnfinishedInInventory();
+		recalculateGoalData();
 		updatePotionOrders();
 		updateMixGuidance();
 		tryHighlightNextStation();
