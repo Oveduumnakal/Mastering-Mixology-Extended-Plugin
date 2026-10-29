@@ -12,12 +12,16 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.GraphicsObject;
 import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.VarbitComposition;
+import net.runelite.api.events.ChatMessage;
+import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.GameTick;
 import net.runelite.api.events.GraphicsObjectCreated;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.VarbitChanged;
@@ -230,6 +234,105 @@ public class MasteringMixologyPluginLogicTest
 		plugin.triggerPotionOrderUpdate();
 
 		verify(client).queueChangedVarp(7);
+	}
+
+	@Test
+	public void digweedMarksSurviveALogoutAndLogin()
+	{
+		orders(PotionType.MARLEYS_MOONLIGHT, PotionType.LIPLACK_LIQUOR);
+		enterLab();
+		digweedMixedInto("Marley's moonlight");
+		assertTrue(order(PotionType.MARLEYS_MOONLIGHT).improved());
+
+		gameState(GameState.LOGIN_SCREEN);
+		gameState(GameState.LOGGING_IN);
+		orders();
+		varbit(VarbitID.MM_LAB_ORDER_1_TYPE, 0);
+		enterLab();
+		gameState(GameState.LOGGED_IN);
+		orders(PotionType.MARLEYS_MOONLIGHT, PotionType.LIPLACK_LIQUOR);
+		enterLab();
+
+		assertTrue(order(PotionType.MARLEYS_MOONLIGHT).improved());
+	}
+
+	@Test
+	public void aDeliveryWhileLoggedInStillClearsTheDigweedMarks()
+	{
+		orders(PotionType.MARLEYS_MOONLIGHT, PotionType.LIPLACK_LIQUOR);
+		enterLab();
+		digweedMixedInto("Marley's moonlight");
+
+		varbit(VarbitID.MM_LAB_ORDER_1_TYPE, 0);
+		enterLab();
+
+		assertFalse(order(PotionType.MARLEYS_MOONLIGHT).improved());
+	}
+
+	@Test
+	public void theLoginReloadEndsAfterAFewTicks()
+	{
+		orders(PotionType.MARLEYS_MOONLIGHT, PotionType.LIPLACK_LIQUOR);
+		enterLab();
+		digweedMixedInto("Marley's moonlight");
+		gameState(GameState.LOGIN_SCREEN);
+		gameState(GameState.LOGGED_IN);
+		for (int tick = 0; tick < 3; tick++)
+			plugin.onGameTick(new GameTick());
+
+		varbit(VarbitID.MM_LAB_ORDER_1_TYPE, 0);
+		enterLab();
+
+		assertFalse(order(PotionType.MARLEYS_MOONLIGHT).improved());
+	}
+
+	/** Sets the order varbits to the given potions, each with the Agitator's modifier, and the rest to none. */
+	private void orders(PotionType... types)
+	{
+		int[] typeVarbits = {VarbitID.MM_LAB_ORDER_1_TYPE, VarbitID.MM_LAB_ORDER_2_TYPE, VarbitID.MM_LAB_ORDER_3_TYPE};
+		int[] modifierVarbits = {
+				VarbitID.MM_LAB_ORDER_1_MODIFIER, VarbitID.MM_LAB_ORDER_2_MODIFIER, VarbitID.MM_LAB_ORDER_3_MODIFIER
+		};
+		for (int slot = 0; slot < 3; slot++)
+		{
+			boolean set = slot < types.length;
+			when(client.getVarbitValue(typeVarbits[slot])).thenReturn(set ? types[slot].ordinal() + 1 : 0);
+			when(client.getVarbitValue(modifierVarbits[slot]))
+					.thenReturn(set ? PotionModifier.HOMOGENOUS.ordinal() + 1 : 0);
+		}
+	}
+
+	/** Loads the orders widget, as on entering the lab or logging back in, which rebuilds the orders. */
+	private void enterLab()
+	{
+		WidgetLoaded loaded = new WidgetLoaded();
+		loaded.setGroupId(InterfaceID.MM_OVERLAY);
+		plugin.onWidgetLoaded(loaded);
+	}
+
+	private void digweedMixedInto(String potion)
+	{
+		ChatMessage message = new ChatMessage();
+		message.setType(ChatMessageType.GAMEMESSAGE);
+		message.setMessage("You mix the digweed into the @mes_hl_pur@" + potion
+				+ "</col>, drastically improving its quality!");
+		plugin.onChatMessage(message);
+	}
+
+	private void gameState(GameState state)
+	{
+		GameStateChanged event = new GameStateChanged();
+		event.setGameState(state);
+		plugin.onGameStateChanged(event);
+	}
+
+	private PotionOrder order(PotionType type)
+	{
+		return plugin.potionOrders()
+				.stream()
+				.filter(order -> order.potionType() == type)
+				.findFirst()
+				.orElseThrow();
 	}
 
 	private void orderVarbitAtIndex(int varpIndex)

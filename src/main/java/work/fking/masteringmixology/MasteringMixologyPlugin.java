@@ -141,6 +141,9 @@ public class MasteringMixologyPlugin extends Plugin
 
 	private static final double SECONDS_PER_TICK = 0.6;
 
+	/** Game ticks after a login during which the client reloads the lab's varbits and inventory. */
+	private static final int LOGIN_RELOAD_TICKS = 3;
+
 	/** The animation id of a player doing nothing. */
 	private static final int NO_ANIMATION = -1;
 
@@ -179,6 +182,18 @@ public class MasteringMixologyPlugin extends Plugin
 
 	private final Map<AlchemyObject, HighlightedObject> highlightedObjects = new LinkedHashMap<>();
 	private List<PotionOrder> potionOrders = Collections.emptyList();
+
+	/**
+	 * The last order set that was not empty, so its done and digweed marks come back when the same orders reappear
+	 * after a logout; emptied on a delivery.
+	 */
+	private List<PotionOrder> knownOrders = Collections.emptyList();
+
+	/** True from logging out, hopping or losing the connection until the next login. */
+	private boolean loggedOut;
+
+	/** Game ticks left of the reload after the last login. */
+	private int loginReloadTicks;
 	private boolean inLab = false;
 
 	private PotionType alembicPotionType;
@@ -548,8 +563,28 @@ public class MasteringMixologyPlugin extends Plugin
 	@Subscribe
 	public void onGameStateChanged(GameStateChanged event)
 	{
-		if (event.getGameState() == GameState.LOGIN_SCREEN || event.getGameState() == GameState.HOPPING)
+		var state = event.getGameState();
+		if (state == GameState.LOGIN_SCREEN || state == GameState.HOPPING)
 			highlightedObjects.clear();
+
+		if (state == GameState.LOGIN_SCREEN || state == GameState.HOPPING || state == GameState.CONNECTION_LOST)
+		{
+			loggedOut = true;
+		}
+		else if (state == GameState.LOGGED_IN && loggedOut)
+		{
+			loggedOut = false;
+			loginReloadTicks = LOGIN_RELOAD_TICKS;
+		}
+	}
+
+	/**
+	 * Returns whether the client is logged out or still reloading the lab after a login. Varbits and the inventory
+	 * read empty while it does, which is not play: no delivery and no potion leaving.
+	 */
+	private boolean reloading()
+	{
+		return loggedOut || loginReloadTicks > 0;
 	}
 
 	@Subscribe
@@ -715,7 +750,7 @@ public class MasteringMixologyPlugin extends Plugin
 		{
 			markActive();
 			int[] items = itemIds(event.getItemContainer());
-			if (lastInventory != null)
+			if (lastInventory != null && !reloading())
 				improvedPotions.inventoryChanged(lastInventory, items);
 
 			lastInventory = items;
@@ -772,7 +807,8 @@ public class MasteringMixologyPlugin extends Plugin
 	 * Reacts to the lab's varbits and varps.
 	 *
 	 * <p>Delivering a potion resets every order varbit to 0 before setting the new values, so the first order varbit
-	 * dropping to 0 clears all the stations and the order list; the new orders then start with nothing done. A
+	 * dropping to 0 clears all the stations and the order list; the new orders then start with nothing done. The
+	 * varbits also read 0 while the client logs back in, which is ignored so the orders keep their marks. A
 	 * station's potion varbit returning to 0 means that station has finished: its highlight is removed and the
 	 * matching order is fulfilled. A progress varbit that drops means a quick action failed and a quick-action varbit
 	 * means one was just popped, so both reset that station's highlight. The Agitator's quick action has a window of
@@ -788,11 +824,16 @@ public class MasteringMixologyPlugin extends Plugin
 
 		if (varbitId == VARBIT_POTION_ORDER_1)
 		{
-			if (value == 0)
+			if (value == 0 && reloading())
+			{
+				LOGGER.debug("Order varbit reset by a login, not a delivery");
+			}
+			else if (value == 0)
 			{
 				recordDelivery();
 				unHighlightAllStations();
 				potionOrders = Collections.emptyList();
+				knownOrders = Collections.emptyList();
 				improvedPotions.clear();
 			}
 			else
@@ -973,6 +1014,9 @@ public class MasteringMixologyPlugin extends Plugin
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
+		if (loginReloadTicks > 0)
+			loginReloadTicks--;
+
 		if (inLab && playerBusy())
 			markActive();
 
@@ -1866,9 +1910,12 @@ public class MasteringMixologyPlugin extends Plugin
 	private void updatePotionOrders()
 	{
 		LOGGER.debug("Updating potion orders");
-		var previousOrders = potionOrders;
-		potionOrders = getPotionOrders();
-		PotionOrder.keepFulfilled(previousOrders, potionOrders);
+		var rebuilt = getPotionOrders();
+		PotionOrder.keepFulfilled(potionOrders, rebuilt);
+		PotionOrder.keepFulfilled(knownOrders, rebuilt);
+		potionOrders = rebuilt;
+		if (!rebuilt.isEmpty())
+			knownOrders = rebuilt;
 
 		var potionOrderSorting = config.potionOrderSorting();
 
