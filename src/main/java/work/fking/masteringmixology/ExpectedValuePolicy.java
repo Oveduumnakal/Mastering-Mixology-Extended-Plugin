@@ -16,12 +16,23 @@ import java.util.Set;
  * useful resin per potion the player can expect from future order sets. That rate is found by Dinkelbach iteration
  * over every possible order set, weighted by the in-game order chances, and the delivery that beats it by the most
  * wins.
+ *
+ * <p>Time is counted in potions. Each delivery also costs {@link #DEPOSIT_COST} potions of time for the walk to the
+ * conveyor belt and the start of the next set. Every choice includes exactly one delivery, so this cost does not
+ * change the comparison within one order set; it lowers the long-run rate, which makes extra potions in the current
+ * set worth brewing more often.
  */
 public class ExpectedValuePolicy implements RecommendationPolicy
 {
 	private static final int[][] SUBSETS = {{0}, {1}, {2}, {0, 1}, {0, 2}, {1, 2}, {0, 1, 2}};
 	private static final int MAX_ITERATIONS = 50;
 	private static final double EPSILON = 1e-6;
+
+	/**
+	 * The time one delivery costs, in potions. A fit over 2026-10-29 lab play gave about 12 seconds per potion plus
+	 * 17 seconds per delivery.
+	 */
+	static final double DEPOSIT_COST = 1.5;
 	private static final List<Draw> DRAWS = draws();
 
 	@Override
@@ -44,8 +55,8 @@ public class ExpectedValuePolicy implements RecommendationPolicy
 	}
 
 	/**
-	 * Returns the weighted useful resin per potion that the best play earns on average from a fresh order set,
-	 * holding the deficit fixed.
+	 * Returns the weighted useful resin per potion of time that the best play earns on average from a fresh order
+	 * set, holding the deficit fixed. Each delivery adds {@link #DEPOSIT_COST} to the time.
 	 */
 	static double longRunRate(int[] deficit, double[] weight)
 	{
@@ -58,7 +69,7 @@ public class ExpectedValuePolicy implements RecommendationPolicy
 			{
 				int[] best = bestSubset(draw.orders, deficit, weight, rate);
 				resin += draw.chance * gain(draw.orders, best, deficit, weight);
-				potions += draw.chance * best.length;
+				potions += draw.chance * (best.length + DEPOSIT_COST);
 			}
 
 			double next = resin / potions;
