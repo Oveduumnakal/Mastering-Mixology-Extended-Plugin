@@ -37,6 +37,9 @@ public class OrdersPanelOverlay extends Overlay
 	private static final int AMOUNT_ROW_HEIGHT = 20;
 	private static final int BLOCK_SIZE = 9;
 	private static final int BLOCK_GAP = 2;
+
+	/** How long the digweed icon stays on, then off, while it flashes. */
+	private static final long DIGWEED_FLASH_MILLIS = 400;
 	private static final int ICON_GAP = 4;
 	private static final int NAME_RECIPE_GAP = 8;
 	private static final int MIN_WIDTH = 200;
@@ -62,6 +65,10 @@ public class OrdersPanelOverlay extends Overlay
 	/** Item images whose loading is watched, so a copy scaled before the image loaded is dropped once it has. */
 	private final Set<BufferedImage> watchedImages = Collections.newSetFromMap(
 			Collections.synchronizedMap(new WeakHashMap<>()));
+
+	/** The digweed leaf, drawn again when the digweed colour changes. */
+	private BufferedImage digweedIcon;
+	private Color digweedIconColor;
 
 	@Inject
 	OrdersPanelOverlay(MasteringMixologyPlugin plugin, MasteringMixologyConfig config, SpriteManager spriteManager,
@@ -91,7 +98,11 @@ public class OrdersPanelOverlay extends Overlay
 
 		graphics.setFont(smallFont);
 		int recipeWidth = graphics.getFontMetrics().stringWidth("(done!)");
-		int width = Math.max(MIN_WIDTH, PADDING * 2 + ICON_SIZE + ICON_GAP + nameWidth + NAME_RECIPE_GAP + recipeWidth);
+		int digweedTarget = plugin.digweedTargetSlot();
+		boolean digweedShown = digweedTarget >= 0 || orders.stream().anyMatch(PotionOrder::improved);
+		int digweedWidth = digweedShown ? ICON_GAP + ICON_SIZE : 0;
+		int width = Math.max(MIN_WIDTH,
+				PADDING * 2 + ICON_SIZE + ICON_GAP + nameWidth + NAME_RECIPE_GAP + recipeWidth + digweedWidth);
 		int rows = config.displayResin() ? 2 : 1;
 		int height = PADDING * 2 + SMALL_ROW_HEIGHT + ROW_HEIGHT * orders.size() + DIVIDER_GAP * 2
 				+ AMOUNT_ROW_HEIGHT * rows;
@@ -108,6 +119,8 @@ public class OrdersPanelOverlay extends Overlay
 		{
 			boolean skipped = recommended != null && !order.fulfilled() && !recommended.contains(order.idx());
 			drawOrder(graphics, order, skipped, y, nameFont, smallFont, nameWidth);
+			drawDigweed(graphics, order, order.idx() == digweedTarget, y,
+					PADDING + ICON_SIZE + ICON_GAP + nameWidth + NAME_RECIPE_GAP + recipeWidth + ICON_GAP);
 			y += ROW_HEIGHT;
 		}
 
@@ -159,6 +172,26 @@ public class OrdersPanelOverlay extends Overlay
 			drawText(graphics, "(done!)", x, baseline, DONE_COLOR);
 		else
 			drawRecipe(graphics, order.potionType(), x, baseline, skipped);
+	}
+
+	/**
+	 * Draws the digweed icon after an order's recipe: solid once a digweed improved the order's potion, flashing while
+	 * the held digweed should go on it.
+	 */
+	private void drawDigweed(Graphics2D graphics, PotionOrder order, boolean target, int top, int x)
+	{
+		boolean flashOn = System.currentTimeMillis() / DIGWEED_FLASH_MILLIS % 2 == 0;
+		if (!order.improved() && !(target && flashOn))
+			return;
+
+		var color = config.digweedHighlightColor();
+		if (digweedIcon == null || !color.equals(digweedIconColor))
+		{
+			digweedIcon = DigweedIcon.create(ICON_SIZE, color);
+			digweedIconColor = color;
+		}
+
+		drawIcon(graphics, digweedIcon, x, top + (ROW_HEIGHT - ICON_SIZE) / 2);
 	}
 
 	/** Returns the station icon for an order slot, scaled down to fit the row, or null before the game's is read. */

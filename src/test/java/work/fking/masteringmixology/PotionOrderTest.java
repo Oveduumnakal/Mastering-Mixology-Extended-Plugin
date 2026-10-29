@@ -23,6 +23,18 @@ public class PotionOrderTest
 		assertTrue(rebuilt.fulfilled());
 	}
 
+	@Test
+	public void rebuiltOrderKeepsItsDigweedImprovement()
+	{
+		PotionOrder old = new PotionOrder(1, PotionType.MIXALOT, PotionModifier.CONCENTRATED);
+		old.setImproved(true);
+		PotionOrder rebuilt = new PotionOrder(1, PotionType.MIXALOT, PotionModifier.CONCENTRATED);
+
+		PotionOrder.keepFulfilled(List.of(old), List.of(rebuilt));
+
+		assertTrue(rebuilt.improved());
+	}
+
 	/** A different slot, potion or modifier is a different order, so it starts not done. */
 	@Test
 	public void changedOrderStartsNotDone()

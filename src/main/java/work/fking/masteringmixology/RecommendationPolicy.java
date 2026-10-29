@@ -17,14 +17,13 @@ public interface RecommendationPolicy
 	Set<Integer> decide(PotionType[] orders, int[] resin, int[] target);
 
 	/**
-	 * Decides which slots to brew, knowing each order's modifier. Policies that ignore the station use
+	 * Decides which slots to brew, knowing each order's modifier, which potions a digweed already improved and how
+	 * many digweed the player holds. Policies that use none of these fall back to
 	 * {@link #decide(PotionType[], int[], int[])}.
-	 *
-	 * @param modifiers the 3 current orders' modifiers (slot index = array index); an entry is null when not known
 	 */
-	default Set<Integer> decide(PotionType[] orders, PotionModifier[] modifiers, int[] resin, int[] target)
+	default Set<Integer> decide(OrderSet orderSet, int[] resin, int[] target)
 	{
-		return decide(orders, resin, target);
+		return decide(orderSet.orders(), resin, target);
 	}
 
 	/** Clears any state carried between calls. Stateless policies keep this empty default. */

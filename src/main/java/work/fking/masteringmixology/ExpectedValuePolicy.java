@@ -23,6 +23,10 @@ import java.util.Set;
  * not change the comparison within one order set; it lowers the long-run rate, which makes extra potions in the
  * current set worth brewing more often. When the orders' modifiers are known, each potion in the current set costs its
  * station's time (see {@link #potionCost(PotionModifier)}); future sets use the average.
+ *
+ * <p>A digweed doubles one potion's resin, and the batch bonus applies to the doubled amount. Potions it already
+ * improved count double, and each digweed the player holds goes on the slot of a delivery where it adds the most
+ * useful resin, so an order worth brewing only with a digweed gets recommended. Future sets assume no digweed.
  */
 public class ExpectedValuePolicy implements RecommendationPolicy
 {
@@ -44,22 +48,22 @@ public class ExpectedValuePolicy implements RecommendationPolicy
 	@Override
 	public Set<Integer> decide(PotionType[] orders, int[] resin, int[] target)
 	{
-		return decide(orders, new PotionModifier[orders.length], resin, target);
+		return decide(OrderSet.of(orders), resin, target);
 	}
 
 	@Override
-	public Set<Integer> decide(PotionType[] orders, PotionModifier[] modifiers, int[] resin, int[] target)
+	public Set<Integer> decide(OrderSet orderSet, int[] resin, int[] target)
 	{
 		int[] deficit = MetaPolicy.deficit(resin, target);
 		if (deficit[0] == 0 && deficit[1] == 0 && deficit[2] == 0)
 			return MetaPolicy.all3();
 
-		double[] cost = new double[orders.length];
-		for (int slot = 0; slot < orders.length; slot++)
-			cost[slot] = potionCost(modifiers[slot]);
+		double[] cost = new double[orderSet.orders().length];
+		for (int slot = 0; slot < cost.length; slot++)
+			cost[slot] = potionCost(orderSet.modifiers()[slot]);
 
 		double[] weight = weights(deficit);
-		int[] best = bestSubset(orders, cost, deficit, weight, longRunRate(deficit, weight));
+		int[] best = bestSubset(orderSet, cost, deficit, weight, longRunRate(deficit, weight));
 		Set<Integer> slots = new HashSet<>();
 		if (best != null)
 		{
@@ -83,7 +87,7 @@ public class ExpectedValuePolicy implements RecommendationPolicy
 			double potions = 0;
 			for (Draw draw : DRAWS)
 			{
-				int[] best = bestSubset(draw.orders, AVERAGE_COST, deficit, weight, rate);
+				int[] best = bestSubset(OrderSet.of(draw.orders), AVERAGE_COST, deficit, weight, rate);
 				resin += draw.chance * gain(draw.orders, best, deficit, weight);
 				potions += draw.chance * (best.length + DEPOSIT_COST);
 			}
@@ -126,17 +130,17 @@ public class ExpectedValuePolicy implements RecommendationPolicy
 	 *
 	 * @param cost each slot's potion time, in average potions
 	 */
-	static int[] bestSubset(PotionType[] orders, double[] cost, int[] deficit, double[] weight, double rate)
+	static int[] bestSubset(OrderSet orderSet, double[] cost, int[] deficit, double[] weight, double rate)
 	{
 		int[] best = null;
 		double bestScore = Double.NEGATIVE_INFINITY;
 		double bestGain = -1;
 		for (int[] subset : SUBSETS)
 		{
-			if (!known(orders, subset))
+			if (!known(orderSet.orders(), subset))
 				continue;
 
-			double gain = gain(orders, subset, deficit, weight);
+			double gain = bestGain(orderSet, subset, deficit, weight);
 			double time = 0;
 			for (int slot : subset)
 				time += cost[slot];
@@ -159,18 +163,99 @@ public class ExpectedValuePolicy implements RecommendationPolicy
 	 */
 	static double gain(PotionType[] orders, int[] subset, int[] deficit, double[] weight)
 	{
+		return gain(orders, subset, new boolean[orders.length], deficit, weight);
+	}
+
+	/**
+	 * Returns the weighted useful resin of delivering the given slots together, as {@link #gain(PotionType[], int[],
+	 * int[], double[])} does, with each doubled slot's resin counted twice.
+	 */
+	static double gain(PotionType[] orders, int[] subset, boolean[] doubled, int[] deficit, double[] weight)
+	{
 		int bonusFifths = 4 + subset.length;
 		double total = 0;
 		for (int colour = 0; colour < 3; colour++)
 		{
 			int resin = 0;
 			for (int slot : subset)
-				resin += orders[slot].resinYield(colour);
+				resin += orders[slot].resinYield(colour) * (doubled[slot] ? 2 : 1);
 
 			total += weight[colour] * Math.min(deficit[colour], resin * bonusFifths / 5);
 		}
 
 		return total;
+	}
+
+	/**
+	 * Returns the weighted useful resin of delivering the given slots, with the improved potions doubled and each held
+	 * digweed placed on the slot where it adds the most.
+	 */
+	static double bestGain(OrderSet orderSet, int[] subset, int[] deficit, double[] weight)
+	{
+		PotionType[] orders = orderSet.orders();
+		boolean[] improved = orderSet.improved();
+		if (orderSet.digweed() == 0)
+			return gain(orders, subset, improved, deficit, weight);
+
+		double best = Double.NEGATIVE_INFINITY;
+		for (int mask = 0; mask < 1 << subset.length; mask++)
+		{
+			boolean[] doubled = improved.clone();
+			int used = 0;
+			boolean valid = true;
+			for (int i = 0; i < subset.length; i++)
+			{
+				if ((mask & 1 << i) == 0)
+					continue;
+
+				if (improved[subset[i]])
+					valid = false;
+
+				doubled[subset[i]] = true;
+				used++;
+			}
+
+			if (valid && used <= orderSet.digweed())
+				best = Math.max(best, gain(orders, subset, doubled, deficit, weight));
+		}
+
+		return best;
+	}
+
+	/**
+	 * Returns the slot a held digweed should go on: among the recommended slots not yet improved, the one whose
+	 * doubling adds the most weighted useful resin to the recommended delivery; a tie goes to the lower slot. Returns
+	 * -1 when there is no such slot.
+	 *
+	 * @param recommended the slots that will be delivered together
+	 */
+	static int digweedSlot(OrderSet orderSet, Set<Integer> recommended, int[] deficit)
+	{
+		PotionType[] orders = orderSet.orders();
+		int[] subset = recommended.stream()
+				.filter(slot -> orders[slot] != null)
+				.mapToInt(Integer::intValue)
+				.sorted()
+				.toArray();
+		double[] weight = weights(deficit);
+		int bestSlot = -1;
+		double bestGain = Double.NEGATIVE_INFINITY;
+		for (int slot : subset)
+		{
+			if (orderSet.improved()[slot])
+				continue;
+
+			boolean[] doubled = orderSet.improved().clone();
+			doubled[slot] = true;
+			double gain = gain(orders, subset, doubled, deficit, weight);
+			if (gain > bestGain + EPSILON)
+			{
+				bestSlot = slot;
+				bestGain = gain;
+			}
+		}
+
+		return bestSlot;
 	}
 
 	/**

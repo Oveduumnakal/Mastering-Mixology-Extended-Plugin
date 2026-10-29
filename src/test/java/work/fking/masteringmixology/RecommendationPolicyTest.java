@@ -127,6 +127,40 @@ public class RecommendationPolicyTest
 	}
 
 	@Test
+	public void heldDigweedMakesAnOrderWorthBrewing()
+	{
+		var orders = new PotionType[]{MAMMOTH_MIGHT_MIX, ALCO_AUGMENTATOR, AZURE_AURA_MIX};
+		var resin = new int[]{10104, 8742, 11502};
+		var target = new int[]{13800, 11200, 15100};
+		var withDigweed = new OrderSet(orders, new PotionModifier[3], new boolean[3], 1);
+		assertEquals(Set.of(0), new ExpectedValuePolicy().decide(orders, resin, target));
+		assertEquals(Set.of(0, 2), new ExpectedValuePolicy().decide(withDigweed, resin, target));
+	}
+
+	@Test
+	public void digweedGoesOnThePotionWhereDoublingAddsTheMost()
+	{
+		var orders = OrderSet.of(new PotionType[]{MAMMOTH_MIGHT_MIX, MIXALOT, LIPLACK_LIQUOR});
+		assertEquals(1, ExpectedValuePolicy.digweedSlot(orders, Set.of(0, 1), new int[]{1000, 1000, 1000}));
+	}
+
+	@Test
+	public void digweedSkipsColoursAlreadyAtTarget()
+	{
+		var orders = OrderSet.of(new PotionType[]{MAMMOTH_MIGHT_MIX, LIPLACK_LIQUOR, MIXALOT});
+		assertEquals(1, ExpectedValuePolicy.digweedSlot(orders, Set.of(0, 1), new int[]{0, 1000, 1000}));
+	}
+
+	@Test
+	public void digweedSkipsImprovedPotions()
+	{
+		var types = new PotionType[]{MAMMOTH_MIGHT_MIX, MIXALOT, LIPLACK_LIQUOR};
+		var improved = new OrderSet(types, new PotionModifier[3], new boolean[]{false, true, false}, 1);
+		assertEquals(0, ExpectedValuePolicy.digweedSlot(improved, Set.of(0, 1), new int[]{1000, 1000, 1000}));
+		assertEquals(-1, ExpectedValuePolicy.digweedSlot(improved, Set.of(1), new int[]{1000, 1000, 1000}));
+	}
+
+	@Test
 	public void weightsAreTheCubedRelativeDeficit()
 	{
 		assertArrayEquals(new double[]{1, 0.125, 0}, ExpectedValuePolicy.weights(new int[]{1000, 500, 0}), 1e-9);
