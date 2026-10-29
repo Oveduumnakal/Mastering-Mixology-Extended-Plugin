@@ -8,8 +8,10 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static work.fking.masteringmixology.PotionType.ALCO_AUGMENTATOR;
+import static work.fking.masteringmixology.PotionType.AZURE_AURA_MIX;
 import static work.fking.masteringmixology.PotionType.LIPLACK_LIQUOR;
 import static work.fking.masteringmixology.PotionType.MAMMOTH_MIGHT_MIX;
+import static work.fking.masteringmixology.PotionType.MARLEYS_MOONLIGHT;
 import static work.fking.masteringmixology.PotionType.MEGALITE_LIQUID;
 import static work.fking.masteringmixology.PotionType.MIXALOT;
 import static work.fking.masteringmixology.PotionType.MYSTIC_MANA_AMALGAM;
@@ -77,6 +79,15 @@ public class RecommendationPolicyTest
 		var orders = new PotionType[]{MIXALOT, MIXALOT, MIXALOT};
 		var target = new int[]{5000, 5000, 5000};
 		assertEquals(Set.of(0, 1, 2), new ExpectedValuePolicy().decide(orders, NO_RESIN, target));
+	}
+
+	@Test
+	public void expectedValueBrewsUsefulOrdersRatherThanPayingForAnotherDelivery()
+	{
+		var orders = new PotionType[]{MARLEYS_MOONLIGHT, AZURE_AURA_MIX, LIPLACK_LIQUOR};
+		var resin = new int[]{9882, 8536, 11200};
+		var target = new int[]{13800, 11200, 15100};
+		assertEquals(Set.of(0, 1, 2), new ExpectedValuePolicy().decide(orders, resin, target));
 	}
 
 	@Test
