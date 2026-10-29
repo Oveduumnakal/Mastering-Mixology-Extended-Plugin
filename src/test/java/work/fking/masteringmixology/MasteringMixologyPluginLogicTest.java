@@ -335,6 +335,17 @@ public class MasteringMixologyPluginLogicTest
 				.orElseThrow();
 	}
 
+	@Test
+	public void theGoalIsWorkedOutOnEnteringTheLab()
+	{
+		when(config.trackReagentPouch()).thenReturn(true);
+		when(client.getVarpValue(MasteringMixologyPlugin.VARP_MOX_RESIN)).thenReturn(1000);
+
+		enterLab();
+
+		assertTrue(plugin.getGoal().isMultiMode());
+	}
+
 	private void orderVarbitAtIndex(int varpIndex)
 	{
 		VarbitComposition varbitType = mock(VarbitComposition.class);
