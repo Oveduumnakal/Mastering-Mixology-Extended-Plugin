@@ -127,6 +127,22 @@ public class RecommendationPolicyTest
 	}
 
 	@Test
+	public void weightsAreTheCubedRelativeDeficit()
+	{
+		assertArrayEquals(new double[]{1, 0.125, 0}, ExpectedValuePolicy.weights(new int[]{1000, 500, 0}), 1e-9);
+	}
+
+	@Test
+	public void retortPotionsCostMoreTimeThanTheOtherStations()
+	{
+		assertEquals(1, ExpectedValuePolicy.potionCost(null), 1e-9);
+		assertTrue(ExpectedValuePolicy.potionCost(PotionModifier.CONCENTRATED)
+				> ExpectedValuePolicy.potionCost(PotionModifier.CRYSTALISED));
+		assertTrue(ExpectedValuePolicy.potionCost(PotionModifier.CONCENTRATED)
+				> ExpectedValuePolicy.potionCost(PotionModifier.HOMOGENOUS));
+	}
+
+	@Test
 	public void longRunRateIsWithinTheBestPossiblePerPotionYield()
 	{
 		int[] deficit = {1000, 1000, 1000};

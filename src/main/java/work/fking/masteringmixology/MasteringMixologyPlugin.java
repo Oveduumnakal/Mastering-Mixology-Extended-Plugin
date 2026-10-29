@@ -1307,10 +1307,14 @@ public class MasteringMixologyPlugin extends Plugin
 			return null;
 
 		PotionType[] ordersBySlot = new PotionType[3];
+		PotionModifier[] modifiersBySlot = new PotionModifier[3];
 		for (PotionOrder po : potionOrders)
+		{
 			ordersBySlot[po.idx()] = po.potionType();
+			modifiersBySlot[po.idx()] = po.potionModifier();
+		}
 
-		return recommendationPolicy.decide(ordersBySlot, resin, target);
+		return recommendationPolicy.decide(ordersBySlot, modifiersBySlot, resin, target);
 	}
 
 	private List<Widget> selectChildren(Widget parent, Predicate<Widget> filter)
