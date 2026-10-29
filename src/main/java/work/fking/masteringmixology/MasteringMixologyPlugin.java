@@ -1247,6 +1247,13 @@ public class MasteringMixologyPlugin extends Plugin
 		return !vesselMixValid(slots, vesselReady);
 	}
 
+	/** True when the vessel's mix is for an order the player plans to make; skipped orders do not count. */
+	private boolean vesselMixPlanned(int[] slots, int vesselReady)
+	{
+		PotionType mix = MixGuidance.vesselPotion(slots, vesselReady);
+		return MixGuidance.mixMatchesPlannedOrder(mix, potionOrders, recommendedSlots, potionsOnHand(false));
+	}
+
 	private boolean vesselMixValid(int[] slots, int vesselReady)
 	{
 		PotionType mix = MixGuidance.vesselPotion(slots, vesselReady);
@@ -1750,7 +1757,9 @@ public class MasteringMixologyPlugin extends Plugin
 
 	/**
 	 * Recomputes the lever state from the orders, vessel and inventory, then refreshes the lever,
-	 * mixing vessel and conveyor belt highlights.
+	 * mixing vessel and conveyor belt highlights. A full vessel whose mix is for no order the player plans to make
+	 * frees every lever instead of highlighting the vessel, so a mix left from before a relog or an order change, or
+	 * one only a skipped order would take, can be corrected.
 	 */
 	private void updateMixGuidance()
 	{
@@ -1774,11 +1783,15 @@ public class MasteringMixologyPlugin extends Plugin
 		highlightLeverState = MixGuidance.leverState(targetType, slots, vesselReady);
 		int[] slotsWithPending = MixGuidance.withPendingPulls(slots, pendingLeverPulls);
 		leverState = MixGuidance.leverState(targetType, slotsWithPending, vesselReady);
+		if (MixGuidance.vesselFull(slots, vesselReady) && !vesselMixPlanned(slots, vesselReady))
+		{
+			highlightLeverState = MixGuidance.LeverState.FREE;
+			leverState = MixGuidance.LeverState.FREE;
+		}
 
 		updateLeverHighlights();
 
-		boolean vesselReadyToMix = MixGuidance.vesselFull(slots, vesselReady)
-				&& (!config.potionProtection() || vesselMixValid(slots, vesselReady));
+		boolean vesselReadyToMix = MixGuidance.vesselFull(slots, vesselReady) && vesselMixPlanned(slots, vesselReady);
 		setReadyHighlight(AlchemyObject.MIXING_VESSEL, config.highlightMixingVessel() && vesselReadyToMix);
 
 		boolean deliverable = MixGuidance.readyToDeliver(potionOrders, recommendedSlots, finishedPotionsOnHand());

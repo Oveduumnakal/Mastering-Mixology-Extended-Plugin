@@ -56,6 +56,8 @@ import static org.mockito.Mockito.when;
 public class MasteringMixologyPluginLogicTest
 {
 	private static final int FOUND_GEM_SOUND = 2655;
+	private static final int MOX_PASTE = 1;
+	private static final int LYE_PASTE = 3;
 
 	@Mock
 	@Bind
@@ -344,6 +346,39 @@ public class MasteringMixologyPluginLogicTest
 		enterLab();
 
 		assertTrue(plugin.getGoal().isMultiMode());
+	}
+
+	@Test
+	public void everyLeverIsFreeWhenTheFullVesselMatchesNoOrder()
+	{
+		when(config.leverClickProtection()).thenReturn(true);
+		orders(PotionType.MARLEYS_MOONLIGHT, PotionType.LIPLACK_LIQUOR);
+		vessel(MOX_PASTE, MOX_PASTE, MOX_PASTE);
+		enterLab();
+
+		assertFalse(click("Mox lever", AlchemyObject.MOX_LEVER).isConsumed());
+		assertFalse(click("Lye lever", AlchemyObject.LYE_LEVER).isConsumed());
+	}
+
+	@Test
+	public void leversStayBlockedWhenTheFullVesselMakesAnOrder()
+	{
+		when(config.leverClickProtection()).thenReturn(true);
+		orders(PotionType.MARLEYS_MOONLIGHT, PotionType.LIPLACK_LIQUOR);
+		vessel(MOX_PASTE, MOX_PASTE, LYE_PASTE);
+		enterLab();
+
+		assertTrue(click("Mox lever", AlchemyObject.MOX_LEVER).isConsumed());
+	}
+
+	/** Sets the paste in each mixer slot (1 Mox, 2 Aga, 3 Lye) with the vessel not yet mixed. */
+	private void vessel(int... slots)
+	{
+		int[] slotVarbits = {VarbitID.MM_LAB_MIXER_SLOT_0, VarbitID.MM_LAB_MIXER_SLOT_1, VarbitID.MM_LAB_MIXER_SLOT_2};
+		for (int slot = 0; slot < slotVarbits.length; slot++)
+			when(client.getVarbitValue(slotVarbits[slot])).thenReturn(slots[slot]);
+
+		when(client.getVarbitValue(VarbitID.MM_LAB_VESSEL_READY)).thenReturn(0);
 	}
 
 	private void orderVarbitAtIndex(int varpIndex)
