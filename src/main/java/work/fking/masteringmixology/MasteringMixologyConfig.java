@@ -144,7 +144,7 @@ public interface MasteringMixologyConfig extends Config
 			keyName = "recommendationStrategy",
 			name = "Strategy",
 			description = "Expected value: the delivery with the most useful resin per unit of time, favouring the "
-					+ "colours furthest behind. Each delivery counts as 1.5 potions of time.<br>"
+					+ "colours furthest behind. Counts the walk to the conveyor belt and each station's time.<br>"
 					+ "Bottleneck: favours the single colour furthest behind.<br>"
 					+ "Adaptive: the original three-mode policy.<br>"
 					+ "Greedy: always brew all 3.",

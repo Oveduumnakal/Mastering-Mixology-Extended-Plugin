@@ -6,9 +6,10 @@ Extended-fork releases; the other entries are inherited from upstream.
 ## 2.0
 * **Recommendation strategy** setting (top of the plugin settings). Choose how orders are coloured brew or
   skip: *Expected value* (new, default), *Bottleneck*, *Adaptive* (the previous policy) or *Greedy* (brew all 3).
-  Expected value needs about 4 % fewer potions than the previous policy for the Reagent Pouch in simulation.
-  It counts each delivery as 1.5 potions of time, for the walk to the conveyor belt, so it no longer skips useful
-  orders just to get a fresh set sooner.
+  Expected value counts time, not just potions: each delivery costs 0.7 potions for the walk to the conveyor belt,
+  and a Retort potion takes longer than an Alembic or Agitator one (timings measured over 40 order sets). It weights
+  each colour by the cube of its relative deficit, so the colours finish together with little wasted resin. In
+  simulation it reaches the Reagent Pouch about 15 minutes sooner than counting potions alone (5.8 h vs 6.1 h).
 * **Cap Concentrate clicks** now blocks only on the last tick before the Retort finishes. It used to block once a
   click would finish the potion, which cut off clicks that still saved a tick.
 * **Retort quick-action colour**: while Concentrate clicks still help, the Retort is drawn in the quick-action colour,
