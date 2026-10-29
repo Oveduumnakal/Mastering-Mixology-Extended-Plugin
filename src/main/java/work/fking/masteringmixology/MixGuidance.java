@@ -6,6 +6,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Decision logic for the mixing workflow: which order to mix next, which lever to pull,
@@ -183,6 +184,30 @@ final class MixGuidance
 			}
 
 			return order;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Picks the open order whose station should take the unfinished potion in the inventory: a planned order first,
+	 * then a skipped one, each in display order. Without the planned pass, a skipped order of the same potion type
+	 * listed first would claim the potion and leave the planned order open.
+	 *
+	 * @param inInventory whether an unfinished potion of the type is in the inventory
+	 * @return the order, or null if no open order's potion is in the inventory
+	 */
+	static PotionOrder orderToProcess(List<PotionOrder> orders, Set<Integer> recommendedSlots,
+			Predicate<PotionType> inInventory)
+	{
+		for (boolean wantPlanned : new boolean[]{true, false})
+		{
+			for (PotionOrder order : orders)
+			{
+				if (!order.fulfilled() && planned(order, recommendedSlots) == wantPlanned
+						&& inInventory.test(order.potionType()))
+					return order;
+			}
 		}
 
 		return null;

@@ -1716,18 +1716,13 @@ public class MasteringMixologyPlugin extends Plugin
 		if (inventory == null)
 			return;
 
-		for (var order : potionOrders)
-		{
-			if (order.fulfilled())
-				continue;
+		var order = MixGuidance.orderToProcess(potionOrders, recommendedSlots,
+				potionType -> inventory.contains(potionType.itemId()));
+		if (order == null)
+			return;
 
-			if (inventory.contains(order.potionType().itemId()))
-			{
-				LOGGER.debug("Highlighting station for order {}", order);
-				highlightObject(order.potionModifier().alchemyObject(), config.stationHighlightColor());
-				break;
-			}
-		}
+		LOGGER.debug("Highlighting station for order {}", order);
+		highlightObject(order.potionModifier().alchemyObject(), config.stationHighlightColor());
 	}
 
 	private List<PotionOrder> getPotionOrders()
