@@ -45,6 +45,8 @@ Extended-fork releases; the other entries are inherited from upstream.
   * Skipped orders draw their recipe letters or blocks in the skip colour.
 * **Fixed**: an error logged at startup when the plugin starts before login.
 * **Fixed**: the numbers in the resin bars sat near the top of the bar; they are now vertically centred.
+* **Fixed**: with two orders of the same potion, the station highlight could point at a skipped order's station,
+  so finishing the potion left the recommended order open. It now points at the recommended order first.
 * **Setting tooltips** put each sentence on its own line.
 
 ## V1.9.1-ext1.1.0

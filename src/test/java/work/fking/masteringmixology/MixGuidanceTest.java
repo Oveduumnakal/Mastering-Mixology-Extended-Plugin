@@ -44,6 +44,20 @@ public class MixGuidanceTest
 	}
 
 	@Test
+	public void orderToProcessPrefersThePlannedOrderOfTheSameType()
+	{
+		PotionOrder skipped = new PotionOrder(2, MAMMOTH_MIGHT_MIX, PotionModifier.CRYSTALISED);
+		PotionOrder planned = new PotionOrder(0, MAMMOTH_MIGHT_MIX, PotionModifier.HOMOGENOUS);
+		List<PotionOrder> orders = List.of(skipped, planned);
+
+		assertSame(planned, MixGuidance.orderToProcess(orders, Set.of(0), type -> type == MAMMOTH_MIGHT_MIX));
+
+		planned.setFulfilled(true);
+		assertSame(skipped, MixGuidance.orderToProcess(orders, Set.of(0), type -> type == MAMMOTH_MIGHT_MIX));
+		assertNull(MixGuidance.orderToProcess(orders, Set.of(0), type -> type == MIXALOT));
+	}
+
+	@Test
 	public void nextOrderSkipsCoveredFulfilledAndSkippedOrders()
 	{
 		PotionOrder first = order(0, MIXALOT);
