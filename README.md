@@ -85,7 +85,10 @@ All of these are off by default.
 
 - **Digweed**
 
-  Highlight digweed and get a notification when it spawns.
+  Highlight digweed and get a notification when it spawns. While you hold one, the digweed and the potion to add it
+  to are outlined in your inventory, and a digweed icon flashes on that order: the recommended potion where doubling
+  adds the most useful resin. Once added, the icon stays on the order and a small digweed marks the potion. The
+  recommendation also counts the digweed, so an order worth brewing only with it gets recommended.
 
 ### Colors
 

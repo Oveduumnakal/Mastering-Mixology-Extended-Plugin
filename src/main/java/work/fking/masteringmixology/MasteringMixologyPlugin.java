@@ -22,10 +22,12 @@ import org.slf4j.LoggerFactory;
 import net.runelite.api.Client;
 import net.runelite.api.FontID;
 import net.runelite.api.GameState;
+import net.runelite.api.ItemContainer;
 import net.runelite.api.MenuAction;
 import net.runelite.api.Player;
 import net.runelite.api.TileObject;
 import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.GraphicsObjectCreated;
@@ -204,6 +206,18 @@ public class MasteringMixologyPlugin extends Plugin
 	 * Order slots the recommendation policy picked on the last order rebuild; null when recommendations are off.
 	 */
 	private Set<Integer> recommendedSlots = null;
+
+	/** The order slot a held digweed should go on, from the last order rebuild; -1 when none. */
+	private int digweedTargetSlot = -1;
+
+	/** How many digweed the inventory holds. */
+	private int digweedHeld;
+
+	/** The inventory slots of potions a digweed improved. */
+	private final ImprovedPotionTracker improvedPotions = new ImprovedPotionTracker();
+
+	/** The inventory's item ids by slot at the last change, to follow improved potions; null before the first. */
+	private int[] lastInventory;
 	/** The sprite the game shows beside each order slot, which is the icon of the station its modifier needs. */
 	private final Map<Integer, Integer> orderSprites = new HashMap<>();
 
@@ -251,6 +265,51 @@ public class MasteringMixologyPlugin extends Plugin
 	List<PotionOrder> potionOrders()
 	{
 		return potionOrders;
+	}
+
+	/** Returns the order slot a held digweed should go on, or -1 when there is none. */
+	int digweedTargetSlot()
+	{
+		return digweedTargetSlot;
+	}
+
+	/** Returns the inventory indexes of potions a digweed improved. */
+	Set<Integer> improvedInventoryIndexes()
+	{
+		return improvedPotions.slots();
+	}
+
+	/** Returns the order a held digweed should go on, or null when there is none. */
+	PotionOrder digweedTargetOrder()
+	{
+		for (var order : potionOrders)
+		{
+			if (order.idx() == digweedTargetSlot)
+				return order;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the inventory index of the potion a held digweed should go on: the first potion of the target order's
+	 * type. Returns -1 when there is no target or that potion is not in the inventory.
+	 */
+	int digweedTargetInventoryIndex()
+	{
+		var order = digweedTargetOrder();
+		var inventory = client.getItemContainer(InventoryID.INV);
+		if (order == null || inventory == null)
+			return -1;
+
+		var items = inventory.getItems();
+		for (int i = 0; i < items.length; i++)
+		{
+			if (PotionType.fromItemId(items[i].getId()) == order.potionType())
+				return i;
+		}
+
+		return -1;
 	}
 
 	/** Returns the order slots the recommendation policy picks, or null when recommendations are off. */
@@ -527,7 +586,9 @@ public class MasteringMixologyPlugin extends Plugin
 				|| event.getKey().equals("accessibilityMoxColor")
 				|| event.getKey().equals("accessibilityAgaColor")
 				|| event.getKey().equals("accessibilityLyeColor")
-				|| event.getKey().equals("accessibilitySkipColor"))
+				|| event.getKey().equals("accessibilitySkipColor")
+				|| event.getKey().equals("highlightDigweedTarget")
+				|| event.getKey().equals("digweedHighlightColor"))
 			clientThread.invokeLater(this::triggerPotionOrderUpdate);
 
 		if (event.getKey().equals("useLetters")
@@ -547,11 +608,78 @@ public class MasteringMixologyPlugin extends Plugin
 	 * <p>The highlight is left alone while a potion is in a station. Otherwise it goes to the station of the first
 	 * potion in the inventory that still needs one.
 	 */
+	/**
+	 * Marks the order whose potion a digweed just improved, read from the chat message, and rebuilds the orders so the
+	 * recommendation counts that potion twice.
+	 */
+	private static int[] itemIds(ItemContainer container)
+	{
+		var items = container.getItems();
+		int[] ids = new int[items.length];
+		for (int i = 0; i < items.length; i++)
+			ids[i] = items[i].getId();
+
+		return ids;
+	}
+
+	/**
+	 * Records the potion slot a digweed is used on, either way round: the digweed on a potion, or a potion on the
+	 * digweed. The game's chat message then confirms it.
+	 */
+	private void recordDigweedUse(MenuOptionClicked event)
+	{
+		var selected = client.getSelectedWidget();
+		if (selected == null)
+			return;
+
+		int selectedItem = selected.getItemId();
+		int targetItem = event.getItemId();
+		if (selectedItem == Digweed.ITEM_ID && PotionType.fromItemId(targetItem) != null)
+			improvedPotions.clicked(event.getParam0(), targetItem);
+		else if (targetItem == Digweed.ITEM_ID && PotionType.fromItemId(selectedItem) != null)
+			improvedPotions.clicked(selected.getIndex(), selectedItem);
+	}
+
+	@Subscribe
+	public void onChatMessage(ChatMessage event)
+	{
+		if (!inLab)
+			return;
+
+		var potionType = Digweed.improvedPotion(event.getMessage());
+		if (potionType == null)
+			return;
+
+		var order = Digweed.orderImproved(potionOrders, potionType, digweedTargetSlot, recommendedSlots);
+		if (order == null)
+			return;
+
+		LOGGER.debug("Digweed improved order {}", order);
+		order.setImproved(true);
+		var inventory = client.getItemContainer(InventoryID.INV);
+		if (inventory != null)
+			improvedPotions.confirmed(potionType, itemIds(inventory));
+
+		triggerPotionOrderUpdate();
+	}
+
 	@Subscribe
 	public void onItemContainerChanged(ItemContainerChanged event)
 	{
 		if (inLab && event.getContainerId() == InventoryID.INV)
 		{
+			int[] items = itemIds(event.getItemContainer());
+			if (lastInventory != null)
+				improvedPotions.inventoryChanged(lastInventory, items);
+
+			lastInventory = items;
+			int digweed = event.getItemContainer().count(Digweed.ITEM_ID);
+			if (digweed != digweedHeld)
+			{
+				digweedHeld = digweed;
+				triggerPotionOrderUpdate();
+			}
+
 			int unfinished = countUnfinishedInInventory();
 			if (unfinished > unfinishedInInventory
 					&& MixGuidance.vesselFull(mixerSlots(), client.getVarbitValue(VARBIT_MIXING_VESSEL_POTION)))
@@ -618,6 +746,7 @@ public class MasteringMixologyPlugin extends Plugin
 			{
 				unHighlightAllStations();
 				potionOrders = Collections.emptyList();
+				improvedPotions.clear();
 			}
 			else
 			{
@@ -860,6 +989,9 @@ public class MasteringMixologyPlugin extends Plugin
 			return;
 
 		MenuAction action = event.getMenuAction();
+		if (action == MenuAction.WIDGET_TARGET_ON_WIDGET)
+			recordDigweedUse(event);
+
 		if (action != MenuAction.GAME_OBJECT_FIRST_OPTION
 				&& action != MenuAction.GAME_OBJECT_SECOND_OPTION
 				&& action != MenuAction.GAME_OBJECT_THIRD_OPTION
@@ -1175,6 +1307,7 @@ public class MasteringMixologyPlugin extends Plugin
 			return;
 
 		recommendedSlots = computeRecommendedSlots();
+		digweedTargetSlot = computeDigweedTarget();
 
 		for (int i = 0; i < potionOrders.size(); i++)
 		{
@@ -1203,6 +1336,11 @@ public class MasteringMixologyPlugin extends Plugin
 				builder.append(" (")
 						.append(recipeText(order.potionType(), skipped, skipColor))
 						.append(")");
+
+			if (order.idx() == digweedTargetSlot)
+				builder.append(' ').append(ColorUtil.wrapWithColorTag("+digweed", config.digweedHighlightColor()));
+			else if (order.improved())
+				builder.append(' ').append(ColorUtil.wrapWithColorTag("x2", config.digweedHighlightColor()));
 
 			orderText.setText(builder.toString());
 
@@ -1288,6 +1426,36 @@ public class MasteringMixologyPlugin extends Plugin
 		if (potionOrders.size() != 3)
 			return null;
 
+		int[] target = goalTarget();
+		if (target == null)
+			return null;
+
+		return recommendationPolicy.decide(orderSet(), currentResin(), target);
+	}
+
+	/**
+	 * Returns the slot a held digweed should go on, or -1 when the highlight is off, no digweed is held or no order
+	 * can take it. The candidates are the recommended orders, or all three when nothing is recommended; without a
+	 * reward goal every colour counts the same.
+	 */
+	private int computeDigweedTarget()
+	{
+		if (!config.highlightDigweedTarget() || digweedHeld == 0 || potionOrders.size() != 3)
+			return -1;
+
+		int[] target = goalTarget();
+		int[] deficit = target == null
+				? new int[]{Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE}
+				: MetaPolicy.deficit(currentResin(), target);
+		Set<Integer> candidates = recommendedSlots == null || recommendedSlots.isEmpty()
+				? Set.of(0, 1, 2)
+				: recommendedSlots;
+		return ExpectedValuePolicy.digweedSlot(orderSet(), candidates, deficit);
+	}
+
+	/** Returns the summed cost of the ticked rewards per colour, or null when no reward is ticked. */
+	private int[] goalTarget()
+	{
 		if (!goal.isMultiMode())
 			return null;
 
@@ -1297,24 +1465,36 @@ public class MasteringMixologyPlugin extends Plugin
 		if (mox == null || aga == null || lye == null)
 			return null;
 
-		int[] resin = {
-				client.getVarpValue(VARP_MOX_RESIN),
-				client.getVarpValue(VARP_AGA_RESIN),
-				client.getVarpValue(VARP_LYE_RESIN)
-		};
 		int[] target = { mox.goalAmount, aga.goalAmount, lye.goalAmount };
 		if (target[0] == 0 && target[1] == 0 && target[2] == 0)
 			return null;
 
+		return target;
+	}
+
+	private int[] currentResin()
+	{
+		return new int[]{
+				client.getVarpValue(VARP_MOX_RESIN),
+				client.getVarpValue(VARP_AGA_RESIN),
+				client.getVarpValue(VARP_LYE_RESIN)
+		};
+	}
+
+	/** Returns the orders by conveyor slot, with their modifiers, digweed improvements and the digweed held. */
+	private OrderSet orderSet()
+	{
 		PotionType[] ordersBySlot = new PotionType[3];
 		PotionModifier[] modifiersBySlot = new PotionModifier[3];
+		boolean[] improvedBySlot = new boolean[3];
 		for (PotionOrder po : potionOrders)
 		{
 			ordersBySlot[po.idx()] = po.potionType();
 			modifiersBySlot[po.idx()] = po.potionModifier();
+			improvedBySlot[po.idx()] = po.improved();
 		}
 
-		return recommendationPolicy.decide(ordersBySlot, modifiersBySlot, resin, target);
+		return new OrderSet(ordersBySlot, modifiersBySlot, improvedBySlot, digweedHeld);
 	}
 
 	private List<Widget> selectChildren(Widget parent, Predicate<Widget> filter)

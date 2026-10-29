@@ -310,6 +310,19 @@ public interface MasteringMixologyConfig extends Config
 	}
 
 	@ConfigItem(
+			section = HIGHLIGHTS,
+			keyName = "highlightDigweedTarget",
+			name = "Digweed target",
+			description = "While you hold a digweed, outlines it and the potion to add it to, and flashes a digweed "
+					+ "on that order.<br>It picks the recommended potion where doubling adds the most useful resin.",
+			position = 7
+	)
+	default boolean highlightDigweedTarget()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 			keyName = "soundEffectAlembic",
 			name = "Fix Alembic quick-action sound effect",
 			description = "Fixes the Alembic quick-action sound effect to play at the correct time",
@@ -325,7 +338,7 @@ public interface MasteringMixologyConfig extends Config
 			keyName = "highlightBorderWidth",
 			name = "Border width",
 			description = "Configures the border width of the object highlights",
-			position = 7
+			position = 8
 	)
 	default int highlightBorderWidth()
 	{
@@ -337,7 +350,7 @@ public interface MasteringMixologyConfig extends Config
 			keyName = "highlightFeather",
 			name = "Feather",
 			description = "Configures the amount of 'feathering' to be applied to the object highlights",
-			position = 8
+			position = 9
 	)
 	default int highlightFeather()
 	{

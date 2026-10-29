@@ -46,6 +46,10 @@ Extended-fork releases; the other entries are inherited from upstream.
   * *Mixing vessel and conveyor belt highlights* — green when they are the next thing to click.
   * *Wait for full order* — no station highlight until every order you are making has been mixed.
   * Skipped orders draw their recipe letters or blocks in the skip colour.
+* **Digweed target** (Highlights, on by default): while you hold a digweed, it and the potion to add it to are
+  outlined in the inventory and a digweed icon flashes on that order; once added, the icon stays and a small digweed
+  marks the potion. Expected value counts the digweed (and potions it already improved) as
+  doubled resin, batch bonus included, so an order worth brewing only with the digweed gets recommended.
 * **Fixed**: an error logged at startup when the plugin starts before login.
 * **Fixed**: the numbers in the resin bars sat near the top of the bar; they are now vertically centred.
 * **Fixed**: with two orders of the same potion, the station highlight could point at a skipped order's station,
