@@ -59,6 +59,15 @@ All of these are off by default.
   instead; 0 leaves them out.
   The overlay shows how far each resin colour is from the combined cost.
 
+- **Rewards panel**
+
+  One row per ticked reward with its estimated time to finish (e.g. `08h 53m 09s`, or `Ready`) and its progress,
+  then a row for all of them together and a bar per resin colour. The estimate uses your own pace once you have
+  delivered 10 order sets, and the strategy you picked. Rewards are listed in the order you tick them;
+  right-click the panel to move one up or down. In the main settings, *Reward Order* buys them top to bottom
+  (default) or counts each reward on its own, and *Reward Progress* puts the percent, the resin still needed or
+  nothing in the middle of each bar. Bar numbers turn dark where the coloured fill passes under them.
+
 - **Know when you can afford it**
 
   Get a notification the moment your resin covers every reward you ticked.

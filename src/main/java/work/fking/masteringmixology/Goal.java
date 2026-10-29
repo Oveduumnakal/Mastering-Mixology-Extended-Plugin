@@ -149,7 +149,7 @@ public class Goal
 		if (config.aldariumQuantity() > 0)
 			list.add(new Selection(RewardItem.ALDARIUM, config.aldariumQuantity()));
 
-		return list;
+		return RewardPriority.sort(list, RewardPriority.parse(config.rewardPriority()));
 	}
 
 	/** A ticked reward and how many of it are wanted. */

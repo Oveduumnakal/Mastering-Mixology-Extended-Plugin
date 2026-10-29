@@ -283,6 +283,12 @@ public class ExpectedValuePolicy implements RecommendationPolicy
 		return true;
 	}
 
+	/** Returns every unordered set of three orders once, with its chance of being drawn. */
+	static List<Draw> orderDraws()
+	{
+		return DRAWS;
+	}
+
 	/** Lists every unordered set of three orders once, with its chance of being drawn. */
 	private static List<Draw> draws()
 	{
@@ -310,7 +316,7 @@ public class ExpectedValuePolicy implements RecommendationPolicy
 	}
 
 	/** One possible set of three orders and its chance of being drawn. */
-	private static final class Draw
+	static final class Draw
 	{
 		final PotionType[] orders;
 		final double chance;

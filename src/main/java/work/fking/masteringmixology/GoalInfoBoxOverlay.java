@@ -6,7 +6,6 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.text.DecimalFormat;
 import javax.inject.Inject;
 
 import net.runelite.client.game.ItemManager;
@@ -16,111 +15,132 @@ import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.ComponentOrientation;
 import net.runelite.client.ui.overlay.components.ImageComponent;
-import net.runelite.client.ui.overlay.components.LineComponent;
-import net.runelite.client.ui.overlay.components.PanelComponent;
 import net.runelite.client.ui.overlay.components.SplitComponent;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.QuantityFormatter;
 
 /**
- * Info box for the reward goal: the reward icon with its name and affordable amount, the overall progress and,
- * optionally, a progress bar for each resin colour.
+ * The rewards panel: a row per tracked reward with its icon, estimated time to completion and progress, a row for all
+ * of them together, then a progress bar per resin colour. Faint lines separate the sections.
  */
 class GoalInfoBoxOverlay extends OverlayPanel
 {
-	private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
 	private static final int BORDER_SIZE = 3;
 	private static final int VERTICAL_GAP = 2;
 	private static final int ICON_AND_GOAL_GAP = 5;
-	private static final Rectangle TOP_PANEL_BORDER = new Rectangle(2, 0, 4, 4);
+	private static final int MIN_WIDTH = 250;
 	private static final int COMPONENT_SPRITE_SIZE = 16;
 	private static final Color PROGRESS_BAR_BACKGROUND_COLOR = new Color(61, 56, 49);
+	private static final Color READY_COLOR = Color.GREEN;
+	private static final Color PENDING_COLOR = Color.GRAY;
 
 	private final MasteringMixologyPlugin plugin;
+	private final MasteringMixologyConfig config;
 	private final ItemManager itemManager;
 	private final SpriteManager spriteManager;
-
-	private final PanelComponent topPanel = new PanelComponent();
-
-	/** Reward icon kept between renders, so it is only looked up again when the reward changes. */
-	private BufferedImage cachedRewardIcon;
-	/** The reward {@link #cachedRewardIcon} belongs to. */
-	private RewardItem cachedRewardItem;
 
 	private final BufferedImage[] componentSprites = new BufferedImage[PotionComponent.ENTRIES.length];
 
 	@Inject
 	GoalInfoBoxOverlay(
 			MasteringMixologyPlugin plugin,
+			MasteringMixologyConfig config,
 			ItemManager itemManager,
 			SpriteManager spriteManager
 	)
 	{
 		super(plugin);
 		this.plugin = plugin;
+		this.config = config;
 		this.itemManager = itemManager;
 		this.spriteManager = spriteManager;
 
 		setPosition(OverlayPosition.TOP_RIGHT);
 		setPriority(PRIORITY_MED);
-		panelComponent.setPreferredSize(new Dimension(250, 0));
+		panelComponent.setPreferredSize(new Dimension(MIN_WIDTH, 0));
 		panelComponent.setBorder(new Rectangle(BORDER_SIZE, BORDER_SIZE, BORDER_SIZE, BORDER_SIZE));
 		panelComponent.setGap(new Point(0, VERTICAL_GAP));
-
-		topPanel.setBorder(TOP_PANEL_BORDER);
-		topPanel.setBackgroundColor(null);
 	}
 
 	/**
-	 * Draws the goal panel: the reward icon, its name and the overall progress, then a
-	 * progress bar per resin colour when those are enabled.
+	 * Draws the reward rows, the all-rewards row when more than one reward is tracked, and a progress bar per resin
+	 * colour.
 	 */
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
 		var goal = plugin.getGoal();
-		var rewardItem = goal.getRewardItem();
-
-		if (!goal.isMultiMode() || !plugin.isInLabRegion())
+		var estimates = plugin.rewardEstimates();
+		if (!goal.isMultiMode() || !plugin.isInLabRegion() || estimates == null)
 			return null;
 
-		topPanel.getChildren().clear();
 		graphics.setFont(FontManager.getRunescapeSmallFont());
+		var metrics = graphics.getFontMetrics();
+		int labelColumn = 0;
+		for (var row : estimates.rows)
+			labelColumn = Math.max(labelColumn, metrics.stringWidth(row.label));
 
-		var topLine = LineComponent.builder()
-				.left(goal.getDisplayName())
-				.leftFont(FontManager.getRunescapeFont())
-				.build();
+		var numberMetrics = graphics.getFontMetrics(NumberFont.matching(graphics, graphics.getFont()));
+		int width = RewardRowComponent.ICON_COLUMN + labelColumn + RewardRowComponent.GAP
+				+ numberMetrics.stringWidth(RewardRowComponent.WIDEST_TIME) + RewardRowComponent.GAP
+				+ numberMetrics.stringWidth(RewardRowComponent.WIDEST_PERCENT) + BORDER_SIZE * 2;
+		panelComponent.setPreferredSize(new Dimension(Math.max(MIN_WIDTH, width), 0));
 
-		var bottomLine = LineComponent.builder()
-				.left("Progress:")
-				.leftFont(FontManager.getRunescapeFont())
-				.right(DECIMAL_FORMAT.format(goal.getOverallProgress() * 100) + "%")
-				.rightFont(FontManager.getRunescapeFont())
-				.rightColor(goal.getOverallProgress() >= 1 ? Color.GREEN : Color.WHITE)
-				.build();
+		long now = plugin.playedMillis();
+		int rewards = estimates.rows.size() - 1;
+		for (int i = 0; i < rewards; i++)
+			panelComponent.getChildren().add(rowComponent(estimates, i, labelColumn, now));
 
-		var textSplit = SplitComponent.builder()
-				.first(topLine)
-				.second(bottomLine)
-				.orientation(ComponentOrientation.VERTICAL)
-				.build();
+		if (rewards > 1)
+		{
+			panelComponent.getChildren().add(new SeparatorComponent());
+			panelComponent.getChildren().add(rowComponent(estimates, rewards, labelColumn, now));
+		}
 
-		var rewardImageComponent = new ImageComponent(getRewardImage(rewardItem));
-		var topInfoSplit = SplitComponent.builder()
-				.first(rewardImageComponent)
-				.second(textSplit)
-				.orientation(ComponentOrientation.HORIZONTAL)
-				.gap(new Point(ICON_AND_GOAL_GAP, 0))
-				.build();
-
-		topPanel.getChildren().add(topInfoSplit);
-		panelComponent.getChildren().add(topPanel);
-
+		panelComponent.getChildren().add(new SeparatorComponent());
 		for (var component : PotionComponent.ENTRIES)
 			createProgressBar(goal, component);
 
 		return super.render(graphics);
+	}
+
+	/** Builds a reward row, its time counted down to {@code now}, in {@link PlayClock} milliseconds played. */
+	private RewardRowComponent rowComponent(RewardEstimates estimates, int index, int labelColumn, long now)
+	{
+		var row = estimates.rows.get(index);
+		double seconds = estimates.seconds[index];
+		String time;
+		Color timeColor;
+		if (row.ready())
+		{
+			time = "Ready";
+			timeColor = READY_COLOR;
+		}
+		else if (Double.isNaN(seconds))
+		{
+			time = "...";
+			timeColor = PENDING_COLOR;
+		}
+		else if (Double.isInfinite(seconds))
+		{
+			time = "--";
+			timeColor = PENDING_COLOR;
+		}
+		else
+		{
+			time = RewardRows.formatTime(estimates.secondsLeft(index, now));
+			timeColor = Color.WHITE;
+		}
+
+		var icon = row.item == null ? null : itemManager.getImage(row.item.itemId());
+		return new RewardRowComponent(icon, row.label, time, timeColor, percent(row.progress),
+				row.ready() ? READY_COLOR : Color.WHITE, labelColumn);
+	}
+
+	/** Formats a 0 to 1 progress as a whole percent, rounded down so 100% means done. */
+	static String percent(double progress)
+	{
+		return (int) Math.floor(progress * 100) + "%";
 	}
 
 	private void createProgressBar(Goal goal, PotionComponent component)
@@ -139,9 +159,7 @@ class GoalInfoBoxOverlay extends OverlayPanel
 		progressBarComponent.setValue(data.percentageToGoal * 100);
 		progressBarComponent.setLeftLabel(QuantityFormatter.quantityToStackSize(data.currentAmount));
 		progressBarComponent.setRightLabel(QuantityFormatter.quantityToStackSize(data.goalAmount));
-		int remaining = Math.max(data.goalAmount - data.currentAmount, 0);
-		if (remaining > 0)
-			progressBarComponent.setCenterLabel("(" + QuantityFormatter.quantityToStackSize(remaining) + ")");
+		progressBarComponent.setCenterLabel(centerLabel(config.showProgress(), data));
 
 		var progressBarSplit = SplitComponent.builder()
 				.first(imageComponent)
@@ -153,15 +171,19 @@ class GoalInfoBoxOverlay extends OverlayPanel
 		panelComponent.getChildren().add(progressBarSplit);
 	}
 
-	private BufferedImage getRewardImage(RewardItem rewardItem)
+	/** Returns the middle label of a resin bar: its percent, the resin still needed, or nothing. */
+	static String centerLabel(ProgressLabel label, Goal.ComponentData data)
 	{
-		if (cachedRewardItem != rewardItem)
+		switch (label)
 		{
-			cachedRewardItem = rewardItem;
-			cachedRewardIcon = itemManager.getImage(rewardItem.itemId());
+			case PERCENT:
+				return percent(data.percentageToGoal);
+			case NUMBER:
+				int remaining = Math.max(data.goalAmount - data.currentAmount, 0);
+				return remaining > 0 ? "(" + QuantityFormatter.quantityToStackSize(remaining) + ")" : "";
+			default:
+				return "";
 		}
-
-		return cachedRewardIcon;
 	}
 
 	private BufferedImage getComponentSprite(PotionComponent component)

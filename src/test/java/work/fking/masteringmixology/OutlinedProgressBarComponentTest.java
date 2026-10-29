@@ -25,18 +25,18 @@ public class OutlinedProgressBarComponentTest
 	{
 		for (Font font : new Font[]{FontManager.getRunescapeSmallFont(), FontManager.getRunescapeFont()})
 		{
-			int[] rows = inkRows(font, "1,920", "(2.3K)", "10K");
+			int[] rows = inkRows(font, "1920", "74%", "10K");
 			int gapAbove = rows[0];
 			int gapBelow = BAR_HEIGHT - 1 - rows[1];
-			assertTrue(font.getName() + " drew no label", rows[1] >= rows[0]);
-			assertEquals(font.getName() + " gap above vs below", gapAbove, gapBelow, 1);
+			assertTrue("drew no label", rows[1] >= rows[0]);
+			assertEquals("gap above vs below, whatever the panel font", gapAbove, gapBelow, 1);
 		}
 	}
 
 	/**
 	 * Renders an empty bar with the given labels and finds the first and last pixel rows the text touches.
 	 *
-	 * @param font   the label font
+	 * @param font   the panel font, which the bar's own number font replaces
 	 * @param left   left label
 	 * @param center center label
 	 * @param right  right label
@@ -75,5 +75,17 @@ public class OutlinedProgressBarComponentTest
 		}
 
 		return new int[]{first, last};
+	}
+
+	@Test
+	public void darkTextOnLightFillsAndLightTextOnDarkOnes()
+	{
+		assertEquals(OutlinedProgressBarComponent.DARK_TEXT, OutlinedProgressBarComponent.textColorOn(Color.GREEN));
+		assertEquals(OutlinedProgressBarComponent.DARK_TEXT,
+				OutlinedProgressBarComponent.textColorOn(new Color(255, 200, 0)));
+		assertEquals(OutlinedProgressBarComponent.LIGHT_TEXT,
+				OutlinedProgressBarComponent.textColorOn(new Color(61, 56, 49)));
+		assertEquals(OutlinedProgressBarComponent.LIGHT_TEXT,
+				OutlinedProgressBarComponent.textColorOn(new Color(40, 40, 200)));
 	}
 }

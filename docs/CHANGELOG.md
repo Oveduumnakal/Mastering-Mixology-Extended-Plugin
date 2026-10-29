@@ -50,6 +50,12 @@ Extended-fork releases; the other entries are inherited from upstream.
   outlined in the inventory and a digweed icon flashes on that order; once added, the icon stays and a small digweed
   marks the potion. Expected value counts the digweed (and potions it already improved) as
   doubled resin, batch bonus included, so an order worth brewing only with the digweed gets recommended.
+* **Rewards panel**: a row per tracked reward with its estimated time to finish (`08h 53m 09s`, or `Ready`) and
+  progress, an *All Rewards* row and the resin bars, split by faint lines. The estimate follows your measured pace
+  (after 10 order sets) and the chosen strategy; in simulation it lands within 2 % of the average. New main
+  settings: *Reward Progress* (Percent, Number or None in the middle of each bar) and *Reward Order* (bought top to
+  bottom by default, or each reward on its own). Rewards are listed in the order you tick them, and
+  right-clicking the panel moves one up or down. Bar numbers switch between light and dark text by the colour behind them.
 * **Fixed**: an error logged at startup when the plugin starts before login.
 * **Fixed**: the numbers in the resin bars sat near the top of the bar; they are now vertically centred.
 * **Fixed**: with two orders of the same potion, the station highlight could point at a skipped order's station,
