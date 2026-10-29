@@ -338,6 +338,17 @@ public class MasteringMixologyPluginLogicTest
 	}
 
 	@Test
+	public void theGoalIsWorkedOutOnEnteringTheLab()
+	{
+		when(config.trackReagentPouch()).thenReturn(true);
+		when(client.getVarpValue(MasteringMixologyPlugin.VARP_MOX_RESIN)).thenReturn(1000);
+
+		enterLab();
+
+		assertTrue(plugin.getGoal().isMultiMode());
+	}
+
+	@Test
 	public void everyLeverIsFreeWhenTheFullVesselMatchesNoOrder()
 	{
 		when(config.leverClickProtection()).thenReturn(true);
