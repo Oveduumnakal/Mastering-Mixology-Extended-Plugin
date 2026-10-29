@@ -283,13 +283,25 @@ final class MixGuidance
 	 */
 	static boolean mixMatchesOpenOrder(PotionType mix, List<PotionOrder> orders, Map<PotionType, Integer> onHand)
 	{
+		return mixMatchesPlannedOrder(mix, orders, null, onHand);
+	}
+
+	/**
+	 * Like {@link #mixMatchesOpenOrder}, counting only the orders the player plans to make: a mix that only a skipped
+	 * order would take is one to correct, not to mix.
+	 *
+	 * @param recommendedSlots the planned order slots; null or empty plans every order
+	 */
+	static boolean mixMatchesPlannedOrder(PotionType mix, List<PotionOrder> orders, Set<Integer> recommendedSlots,
+			Map<PotionType, Integer> onHand)
+	{
 		if (mix == null)
 			return false;
 
 		int open = 0;
 		for (PotionOrder order : orders)
 		{
-			if (!order.fulfilled() && order.potionType() == mix)
+			if (!order.fulfilled() && order.potionType() == mix && planned(order, recommendedSlots))
 				open++;
 		}
 

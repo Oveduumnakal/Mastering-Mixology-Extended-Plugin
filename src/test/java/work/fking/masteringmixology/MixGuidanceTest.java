@@ -142,6 +142,17 @@ public class MixGuidanceTest
 	}
 
 	@Test
+	public void aMixOnlyASkippedOrderTakesIsNotPlanned()
+	{
+		List<PotionOrder> orders = List.of(order(0, MIXALOT), order(1, AQUALUX_AMALGAM));
+
+		assertTrue(MixGuidance.mixMatchesPlannedOrder(MIXALOT, orders, Set.of(0), counts()));
+		assertFalse(MixGuidance.mixMatchesPlannedOrder(AQUALUX_AMALGAM, orders, Set.of(0), counts()));
+		assertTrue(MixGuidance.mixMatchesOpenOrder(AQUALUX_AMALGAM, orders, counts()));
+		assertTrue(MixGuidance.mixMatchesPlannedOrder(AQUALUX_AMALGAM, orders, Set.of(), counts()));
+	}
+
+	@Test
 	public void deliverWhenEveryPlannedOrderIsFulfilledAndHeld()
 	{
 		PotionOrder first = order(0, MIXALOT);
