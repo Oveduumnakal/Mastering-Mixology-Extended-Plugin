@@ -11,6 +11,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -24,15 +26,18 @@ import net.runelite.api.FontID;
 import net.runelite.api.GameState;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.MenuAction;
+import net.runelite.api.MenuEntry;
 import net.runelite.api.Player;
 import net.runelite.api.TileObject;
 import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.GraphicsObjectCreated;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.MenuOptionClicked;
+import net.runelite.api.events.PostMenuSort;
 import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.events.SoundEffectPlayed;
 import net.runelite.api.events.VarbitChanged;
@@ -54,6 +59,7 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.ui.JagexColors;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ColorUtil;
 
@@ -133,6 +139,11 @@ public class MasteringMixologyPlugin extends Plugin
 
 	private static final int FOUND_GEM = 2655;
 
+	private static final double SECONDS_PER_TICK = 0.6;
+
+	/** The animation id of a player doing nothing. */
+	private static final int NO_ANIMATION = -1;
+
 	@Inject
 	private Client client;
 
@@ -150,6 +161,9 @@ public class MasteringMixologyPlugin extends Plugin
 
 	@Inject
 	private ClientThread clientThread;
+
+	@Inject
+	private ScheduledExecutorService executor;
 
 	@Inject
 	private MasteringMixologyOverlay overlay;
@@ -218,6 +232,26 @@ public class MasteringMixologyPlugin extends Plugin
 
 	/** The inventory's item ids by slot at the last change, to follow improved potions; null before the first. */
 	private int[] lastInventory;
+
+	/** The player's measured pace, from the order sets delivered this session. */
+	private final PaceTracker paceTracker = new PaceTracker();
+
+	/** The game tick of the last delivery, to time the next set; -1 before the first. */
+	private int lastDeliveryTick = -1;
+
+	/** The time the player has spent playing in the lab, which the reward times count down by. */
+	private final PlayClock playClock = new PlayClock();
+
+	/** Where the player stood on the last game tick, to tell when they move; null before the first. */
+	private WorldPoint lastPlayerLocation;
+
+	/** The rewards panel rows and their time estimates; null when no reward is tracked. */
+	private volatile RewardEstimates rewardEstimates;
+
+	/** The inputs the current estimates were made from, so unchanged inputs are not worked out again. */
+	private String rewardEstimatesKey = "";
+
+	private Future<?> rewardEstimateTask;
 	/** The sprite the game shows beside each order slot, which is the icon of the station its modifier needs. */
 	private final Map<Integer, Integer> orderSprites = new HashMap<>();
 
@@ -362,6 +396,7 @@ public class MasteringMixologyPlugin extends Plugin
 	protected void startUp()
 	{
 		RewardQuantityMigration.migrate(configManager);
+		syncRewardPriority();
 		overlayManager.add(overlay);
 		overlayManager.add(potionOverlay);
 		overlayManager.add(goalInfoBoxOverlay);
@@ -484,6 +519,11 @@ public class MasteringMixologyPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
+		if (rewardEstimateTask != null)
+			rewardEstimateTask.cancel(true);
+
+		rewardEstimates = null;
+		rewardEstimatesKey = "";
 		overlayManager.remove(overlay);
 		overlayManager.remove(potionOverlay);
 		overlayManager.remove(goalInfoBoxOverlay);
@@ -562,6 +602,10 @@ public class MasteringMixologyPlugin extends Plugin
 		}
 
 		if (event.getKey().startsWith("track") || event.getKey().endsWith("Quantity"))
+			syncRewardPriority();
+
+		if (event.getKey().startsWith("track") || event.getKey().endsWith("Quantity")
+				|| event.getKey().equals(RewardPriority.CONFIG_KEY))
 		{
 			recalculateGoalData();
 			previouslyAboveRewardThreshold = false;
@@ -600,6 +644,7 @@ public class MasteringMixologyPlugin extends Plugin
 			clientThread.invokeLater(this::applyResinIconPalettes);
 
 		clientThread.invokeLater(this::updateMixGuidance);
+		clientThread.invokeLater(this::refreshRewardEstimates);
 	}
 
 	/**
@@ -668,6 +713,7 @@ public class MasteringMixologyPlugin extends Plugin
 	{
 		if (inLab && event.getContainerId() == InventoryID.INV)
 		{
+			markActive();
 			int[] items = itemIds(event.getItemContainer());
 			if (lastInventory != null)
 				improvedPotions.inventoryChanged(lastInventory, items);
@@ -744,6 +790,7 @@ public class MasteringMixologyPlugin extends Plugin
 		{
 			if (value == 0)
 			{
+				recordDelivery();
 				unHighlightAllStations();
 				potionOrders = Collections.emptyList();
 				improvedPotions.clear();
@@ -917,17 +964,48 @@ public class MasteringMixologyPlugin extends Plugin
 			pendingLeverPulls.remove(0);
 
 		if (inLab && affectsMixGuidance(varbitId))
+		{
+			markActive();
 			updateMixGuidance();
+		}
 	}
 
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
+		if (inLab && playerBusy())
+			markActive();
+
 		if (pendingLeverPulls.isEmpty() || client.getTickCount() < pendingLeverPullsExpireTick)
 			return;
 
 		pendingLeverPulls.clear();
 		updateMixGuidance();
+	}
+
+	/** Returns whether the player is animating or moved since the last tick. */
+	private boolean playerBusy()
+	{
+		Player player = client.getLocalPlayer();
+		if (player == null)
+			return false;
+
+		var location = player.getWorldLocation();
+		boolean moved = lastPlayerLocation != null && !location.equals(lastPlayerLocation);
+		lastPlayerLocation = location;
+		return moved || player.getAnimation() != NO_ANIMATION;
+	}
+
+	/** Records that the player is playing, so the reward times keep counting down. */
+	private void markActive()
+	{
+		playClock.active(System.currentTimeMillis());
+	}
+
+	/** Returns the milliseconds played in the lab, which the reward times count down by. */
+	long playedMillis()
+	{
+		return playClock.played(System.currentTimeMillis());
 	}
 
 	private static boolean isMixerSlot(int varbitId)
@@ -1959,6 +2037,153 @@ public class MasteringMixologyPlugin extends Plugin
 	private void recalculateGoalData()
 	{
 		goal.recalculate(config, client);
+		clientThread.invokeLater(this::refreshRewardEstimates);
+	}
+
+	/** Brings the saved reward order up to date with the ticked rewards, saving it when it changed. */
+	private void syncRewardPriority()
+	{
+		String saved = config.rewardPriority() == null ? "" : config.rewardPriority();
+		List<RewardItem> ticked = Goal.collectSelections(config)
+				.stream()
+				.map(selection -> selection.item)
+				.collect(Collectors.toList());
+		String order = RewardPriority.format(RewardPriority.reconcile(RewardPriority.parse(saved), ticked));
+		if (!order.equals(saved))
+			configManager.setConfiguration(MasteringMixologyConfig.CONFIG_GROUP, RewardPriority.CONFIG_KEY, order);
+	}
+
+	/**
+	 * Adds "Move up" and "Move down" for each tracked reward to the right-click menu while the mouse is over the
+	 * rewards panel. They go just above Cancel, so a left-click on the panel still does what it would without them.
+	 */
+	@Subscribe
+	public void onPostMenuSort(PostMenuSort event)
+	{
+		var estimates = rewardEstimates;
+		if (client.isMenuOpen() || estimates == null || !isInLabRegion())
+			return;
+
+		var mouse = client.getMouseCanvasPosition();
+		if (!goalInfoBoxOverlay.getBounds().contains(mouse.getX(), mouse.getY()))
+			return;
+
+		List<RewardRows.Row> rewards = estimates.rows
+				.stream()
+				.filter(row -> row.item != null)
+				.collect(Collectors.toList());
+		for (int i = 0; i < rewards.size(); i++)
+		{
+			if (i > 0)
+				addMoveEntry("Move up", rewards.get(i), -1);
+
+			if (i < rewards.size() - 1)
+				addMoveEntry("Move down", rewards.get(i), 1);
+		}
+	}
+
+	/** Adds one move entry just above Cancel; entries added one after another read top to bottom. */
+	private void addMoveEntry(String option, RewardRows.Row row, int direction)
+	{
+		var menu = client.getMenu();
+		int index = Math.min(1, menu.getMenuEntries().length);
+		MenuEntry entry = menu.createMenuEntry(index);
+		entry.setOption(option);
+		entry.setTarget(ColorUtil.wrapWithColorTag(row.label, JagexColors.MENU_TARGET));
+		entry.setType(MenuAction.RUNELITE);
+		entry.onClick(clicked -> moveReward(row.item, direction));
+	}
+
+	/** Moves a tracked reward one place up (-1) or down (+1) in the saved order, from the panel's right-click menu. */
+	void moveReward(RewardItem item, int direction)
+	{
+		var order = RewardPriority.move(RewardPriority.parse(config.rewardPriority()), item, direction);
+		configManager.setConfiguration(MasteringMixologyConfig.CONFIG_GROUP, RewardPriority.CONFIG_KEY,
+				RewardPriority.format(order));
+	}
+
+	/** Returns the rewards panel rows and their time estimates, or null when no reward is tracked. */
+	RewardEstimates rewardEstimates()
+	{
+		return rewardEstimates;
+	}
+
+	/**
+	 * Times the order set just delivered, from the previous delivery, for the pace. A set with no potion done is an
+	 * order refresh without a delivery and is skipped.
+	 */
+	private void recordDelivery()
+	{
+		int delivered = (int) potionOrders.stream()
+				.filter(PotionOrder::fulfilled)
+				.count();
+		if (delivered == 0)
+			return;
+
+		int tick = client.getTickCount();
+		if (lastDeliveryTick >= 0)
+			paceTracker.addSet((tick - lastDeliveryTick) * SECONDS_PER_TICK, delivered);
+
+		lastDeliveryTick = tick;
+		refreshRewardEstimates();
+	}
+
+	/**
+	 * Rebuilds the rewards panel rows and, when the resin, rewards, strategy or pace changed, works out their time
+	 * estimates in the background. Each row's time shows as soon as it is done, and the panel counts it down until
+	 * the next change.
+	 */
+	private void refreshRewardEstimates()
+	{
+		var selections = Goal.collectSelections(config);
+		if (selections.isEmpty())
+		{
+			rewardEstimates = null;
+			rewardEstimatesKey = "";
+			return;
+		}
+
+		int[] resin = {
+				client.getVarpValue(VARP_MOX_RESIN),
+				client.getVarpValue(VARP_AGA_RESIN),
+				client.getVarpValue(VARP_LYE_RESIN)
+		};
+		var rows = RewardRows.build(selections, resin, config.rewardOrder());
+		var strategy = config.recommendationStrategy();
+		var pace = paceTracker.pace();
+		var key = new StringBuilder(Arrays.toString(resin))
+				.append(strategy)
+				.append(pace.secondsPerPotion)
+				.append(pace.secondsPerDelivery);
+		for (var row : rows)
+			key.append(Arrays.toString(row.target));
+
+		if (key.toString().equals(rewardEstimatesKey))
+			return;
+
+		rewardEstimatesKey = key.toString();
+		double[] seconds = new double[rows.size()];
+		for (int i = 0; i < rows.size(); i++)
+			seconds[i] = rows.get(i).ready() ? 0 : Double.NaN;
+
+		long madeAt = playedMillis();
+		rewardEstimates = new RewardEstimates(rows, seconds.clone(), madeAt);
+		if (rewardEstimateTask != null)
+			rewardEstimateTask.cancel(true);
+
+		rewardEstimateTask = executor.submit(() ->
+		{
+			for (int i = 0; i < rows.size(); i++)
+			{
+				if (Thread.currentThread().isInterrupted())
+					return;
+
+				if (!rows.get(i).ready())
+					seconds[i] = RewardTimeEstimator.seconds(strategy, resin, rows.get(i).target, pace);
+
+				rewardEstimates = new RewardEstimates(rows, seconds.clone(), madeAt);
+			}
+		});
 	}
 
 	/** A lab object that is outlined, with the colour, outline width and feather to draw it with. */

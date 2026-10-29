@@ -20,7 +20,7 @@ public interface MasteringMixologyConfig extends Config
 	@ConfigSection(
 			name = "Colors",
 			description = "Recipe style and the colours used for pastes, skipped orders and highlights",
-			position = 9
+			position = 11
 	)
 	String COLORS = "Colors";
 
@@ -136,7 +136,7 @@ public interface MasteringMixologyConfig extends Config
 	@ConfigSection(
 			name = "Highlights",
 			description = "Highlighting related configuration",
-			position = 10
+			position = 12
 	)
 	String HIGHLIGHTS = "Highlights";
 
@@ -360,7 +360,10 @@ public interface MasteringMixologyConfig extends Config
 	@ConfigSection(
 			name = "Reward Tracking",
 			description = "Tick the rewards you're working toward.<br>"
-					+ "The overlay shows progress toward the combined cost; the notification fires when you meet it.",
+					+ "The overlay shows progress toward the combined cost; the notification fires when you meet "
+					+ "it.<br>"
+					+ "Rewards are listed in the order you tick them; right-click the rewards panel to move "
+					+ "one up or down.",
 			position = 13
 	)
 	String REWARD_TRACKING = "RewardTracking";
@@ -524,6 +527,46 @@ public interface MasteringMixologyConfig extends Config
 	default int aldariumQuantity()
 	{
 		return 0;
+	}
+
+	@ConfigItem(
+			keyName = "showProgress",
+			name = "Reward Progress",
+			description = "What the middle of each resin bar in the rewards panel shows.<br>"
+					+ "Percent: how far the colour is to its target.<br>"
+					+ "Number: the resin still needed.<br>"
+					+ "None: nothing.",
+			position = 9
+	)
+	default ProgressLabel showProgress()
+	{
+		return ProgressLabel.PERCENT;
+	}
+
+	@ConfigItem(
+			keyName = "rewardOrder",
+			name = "Reward Order",
+			description = "How the rewards panel counts your resin.<br>"
+					+ "In order: rewards are bought top to bottom, so each counts only the resin left after the "
+					+ "ones above it.<br>"
+					+ "Each on its own: every reward's time and percent count all your resin.",
+			position = 10
+	)
+	default RewardOrder rewardOrder()
+	{
+		return RewardOrder.IN_ORDER;
+	}
+
+	@ConfigItem(
+			keyName = RewardPriority.CONFIG_KEY,
+			name = "Reward priority",
+			description = "The order of the tracked rewards, set by ticking them and from the panel's right-click "
+					+ "menu",
+			hidden = true
+	)
+	default String rewardPriority()
+	{
+		return "";
 	}
 
 	@ConfigSection(

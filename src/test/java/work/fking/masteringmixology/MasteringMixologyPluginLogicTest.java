@@ -1,5 +1,6 @@
 package work.fking.masteringmixology;
 
+import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Inject;
 
 import com.google.inject.Guice;
@@ -75,6 +76,10 @@ public class MasteringMixologyPluginLogicTest
 	@Mock
 	@Bind
 	private ClientThread clientThread;
+
+	@Mock
+	@Bind
+	private ScheduledExecutorService executor;
 
 	@Mock
 	@Bind
